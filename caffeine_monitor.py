@@ -10,6 +10,7 @@
 
 from datetime import datetime, timedelta
 # import math
+import json
 
 
 class CoffeeMonitor:
@@ -20,44 +21,45 @@ class CoffeeMonitor:
         self.old_time = None
         self.level = None
         self.curr_time = None
+        self.data_dict = {}
 
     def read_file(self):
         try:
-            old_time_str = self.iofile.readline().strip().lstrip('\x00')
-            self.old_time = datetime.strptime(old_time_str, '%Y-%m-%d_%H:%M')
-            level_str = self.iofile.readline().strip()
+            self.data_dict = json.load(self.iofile)
+            old_time_float = self.data_dict['time']
+            self.old_time = datetime.strptime(str(old_time_float), '%Y-%m-%d_%H:%M')
+            level_str = self.data_dict['level']
             self.level = float(level_str)
         except FileNotFoundError:
             self.old_time = datetime.today()
             self.level = 0.0
 
     def write_file(self):
+        self.iofile.seek(0)
         self.iofile.truncate(0)
-        print(datetime.strftime(self.curr_time, '%Y-%m-%d_%H:%M'), file=self.iofile)
-        print(self.level, file=self.iofile)
+        json.dump(self.data_dict, self.iofile)
 
     def decay(self):
         self.curr_time = datetime.today()
         minutes_elapsed = (self.curr_time - self.old_time) / timedelta(minutes=1)
-        # print(minutes_elapsed)
+        self.data_dict['time'] = datetime.strftime(self.curr_time, '%Y-%m-%d_%H:%M')
         self.level = self.level * pow(0.5, (minutes_elapsed / self.half_life))
-        # print(self.level)
+        self.data_dict['level'] = self.level
 
     def add_caffeine(self, amount):
         self.level += amount
 
     def __str__(self):
-        return (f'Caffeine level is {int(round(self.level, 0))} mg at time '
-                f'{datetime.strftime(self.old_time, "%Y-%m-%d %H:%M")}.')
+        return (f'Caffeine level is {round(self.level, 1)} mg at time '
+                f'{datetime.strftime(self.old_time, "%Y-%m-%d %H:%M")}')
 
 
 if __name__ == '__main__':
-    with open('caffeine.txt', 'r+') as storage:
+    with open('caffeine.json', 'r+') as storage:
         monitor = CoffeeMonitor(storage)
         monitor.read_file()
-        print(monitor)
         monitor.decay()
-        print(monitor)
-        monitor.add_caffeine(16)
-        print(monitor)
+        # monitor.add_caffeine(16)
+        # print(monitor)
         monitor.write_file()
+        print(monitor)
