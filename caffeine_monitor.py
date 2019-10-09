@@ -34,19 +34,16 @@ class CoffeeMonitor:
                                  ' level:\n'))
         if new_caffeine:
             self.add_caffeine(new_caffeine)
+        self.update_time()
         self.write_file()
         print(self)
 
     def read_file(self):
-        try:
-            self.data_dict = json.load(self.iofile)
-            old_time_float = self.data_dict['time']
-            self.old_time = datetime.strptime(str(old_time_float), '%Y-%m-%d_%H:%M')
-            level_str = self.data_dict['level']
-            self.level = float(level_str)
-        except FileNotFoundError:
-            self.old_time = datetime.today()
-            self.level = 0.0
+        self.data_dict = json.load(self.iofile)
+        old_time_float = self.data_dict['time']
+        self.old_time = datetime.strptime(str(old_time_float), '%Y-%m-%d_%H:%M')
+        level_str = self.data_dict['level']
+        self.level = float(level_str)
 
     def write_file(self):
         self.iofile.seek(0)
@@ -64,20 +61,15 @@ class CoffeeMonitor:
         self.level += amount
         self.data_dict['level'] += amount
 
+    def update_time(self):
+        self.data_dict['time'] = datetime.strftime(datetime.today(), '%Y-%m-%d_%H:%M')
+
     def __str__(self):
         return (f'Caffeine level is {round(self.level, 1)} mg at time '
-                f'{datetime.strftime(self.old_time, "%Y-%m-%d %H:%M")}')
+                f'{self.data_dict["time"]}')
 
 
 if __name__ == '__main__':
     with open('caffeine.json', 'r+') as storage:
         monitor = CoffeeMonitor(storage)
         monitor.show_menu()
-
-
-        # monitor.read_file()
-        # monitor.decay()
-        # # monitor.add_caffeine(16)
-        # # print(monitor)
-        # monitor.write_file()
-        # print(monitor)
