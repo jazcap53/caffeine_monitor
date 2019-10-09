@@ -19,6 +19,7 @@ class CoffeeMonitor:
         self.infile = infile
         self.old_time = None
         self.level = None
+        self.curr_time = None
 
     def read_file(self):
         try:
@@ -33,12 +34,15 @@ class CoffeeMonitor:
     def decay(self):
         self.curr_time = datetime.today()
         minutes_elapsed = (self.curr_time - self.old_time) / timedelta(minutes=1)
-        print(minutes_elapsed)
+        # print(minutes_elapsed)
         self.level = self.level * pow(0.5, (minutes_elapsed / self.half_life))
-        print(self.level)
+        # print(self.level)
+
+    def add_caffeine(self, amount):
+        self.level += amount
 
     def __str__(self):
-        return (f'Caffeine level is {self.level} mg at time '
+        return (f'Caffeine level is {int(round(self.level, 0))} mg at time '
                 f'{datetime.strftime(self.old_time, "%Y-%m-%d %H:%M")}.')
 
 
@@ -48,4 +52,8 @@ if __name__ == '__main__':
         monitor.read_file()
         print(monitor)
         monitor.decay()
+        print(monitor)
+        monitor.add_caffeine(16)
+        print(monitor)
+
 
