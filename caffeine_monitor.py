@@ -12,28 +12,26 @@
 
 
 from datetime import datetime, timedelta
-# import math
+import sys
 import json
 
 
 class CoffeeMonitor:
     half_life = 360  # in minutes
 
-    def __init__(self, iofile):
+    def __init__(self, iofile, mg):
         self.iofile = iofile
         self.old_time = None
         self.level = None
         self.curr_time = None
         self.data_dict = {}
+        self.mg_to_add = mg
 
-    def show_menu(self):
+    def main(self):
         self.read_file()
         self.decay()
-        new_caffeine = int(input('Enter an (integer) amount of caffeine to add'
-                                 ' (in mg), or enter "0" to read current'
-                                 ' level:\n'))
-        if new_caffeine:
-            self.add_caffeine(new_caffeine)
+        if self.mg_to_add:
+            self.add_caffeine()
         self.update_time()
         self.write_file()
         print(self)
@@ -57,9 +55,9 @@ class CoffeeMonitor:
         self.level = self.level * pow(0.5, (minutes_elapsed / self.half_life))
         self.data_dict['level'] = self.level
 
-    def add_caffeine(self, amount):
-        self.level += amount
-        self.data_dict['level'] += amount
+    def add_caffeine(self):
+        self.level += self.mg_to_add
+        self.data_dict['level'] += self.mg_to_add
 
     def update_time(self):
         self.data_dict['time'] = datetime.strftime(datetime.today(), '%Y-%m-%d_%H:%M')
@@ -70,6 +68,10 @@ class CoffeeMonitor:
 
 
 if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print('Usage: program_name mgs_of_caffeine_to_add (or 0 to just '
+              'display level)')
+        sys.exit(0)
     with open('caffeine.json', 'r+') as storage:
-        monitor = CoffeeMonitor(storage)
-        monitor.show_menu()
+        monitor = CoffeeMonitor(storage, int(sys.argv[1]))
+        monitor.main()
