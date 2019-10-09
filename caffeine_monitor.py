@@ -1,3 +1,5 @@
+#!/usr/bin/env python3.7
+
 # file: caffeine_monitor.py
 # andrew jarcho
 # 2019-10-08
@@ -7,6 +9,7 @@
 # 1. read previous time and amount, if any, from file
 # 2. report current time and amount
 # 3. add a new amount (now or at some previous time)
+
 
 from datetime import datetime, timedelta
 # import math
@@ -22,6 +25,17 @@ class CoffeeMonitor:
         self.level = None
         self.curr_time = None
         self.data_dict = {}
+
+    def show_menu(self):
+        self.read_file()
+        self.decay()
+        new_caffeine = int(input('Enter an (integer) amount of caffeine to add'
+                                 ' (in mg), or enter "0" to read current'
+                                 ' level:\n'))
+        if new_caffeine:
+            self.add_caffeine(new_caffeine)
+        self.write_file()
+        print(self)
 
     def read_file(self):
         try:
@@ -48,6 +62,7 @@ class CoffeeMonitor:
 
     def add_caffeine(self, amount):
         self.level += amount
+        self.data_dict['level'] += amount
 
     def __str__(self):
         return (f'Caffeine level is {round(self.level, 1)} mg at time '
@@ -57,9 +72,12 @@ class CoffeeMonitor:
 if __name__ == '__main__':
     with open('caffeine.json', 'r+') as storage:
         monitor = CoffeeMonitor(storage)
-        monitor.read_file()
-        monitor.decay()
-        # monitor.add_caffeine(16)
+        monitor.show_menu()
+
+
+        # monitor.read_file()
+        # monitor.decay()
+        # # monitor.add_caffeine(16)
+        # # print(monitor)
+        # monitor.write_file()
         # print(monitor)
-        monitor.write_file()
-        print(monitor)
