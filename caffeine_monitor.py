@@ -68,10 +68,9 @@ class CoffeeMonitor:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print('Usage: program_name mgs_of_caffeine_to_add (or 0 to just '
-              'display level)')
+    if len(sys.argv) > 2:
+        print('Usage: program_name <mgs_of_caffeine_to_add>')
         sys.exit(0)
     with open('caffeine.json', 'r+') as storage:
-        monitor = CoffeeMonitor(storage, int(sys.argv[1]))
+        monitor = CoffeeMonitor(storage, int(sys.argv[1]) if len(sys.argv) > 1 else 0)
         monitor.main()
