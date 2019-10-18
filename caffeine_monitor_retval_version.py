@@ -18,9 +18,6 @@ class CoffeeMonitor:
 
     def __init__(self, iofile, mg):
         self.iofile = iofile
-        self.old_time = None
-        self.level = None
-        self.curr_time = None
         self.data_dict = {}
         self.mg_to_add = mg
 
@@ -34,33 +31,37 @@ class CoffeeMonitor:
         print(self)
 
     def read_file(self):
-        local_data_dict = json.load(self.iofile)
-        local_data_dict['time'] = datetime.strptime(local_data_dict['time'],
-                                                    '%Y-%m-%d_%H:%M')
-        local_data_dict['level'] = float(local_data_dict['level'])
-        return local_data_dict
+        data_dict = json.load(self.iofile)
+        data_dict['time'] = datetime.strptime(data_dict['time'],
+                                              '%Y-%m-%d_%H:%M')
+        data_dict['level'] = float(data_dict['level'])
+        self.data_dict = data_dict
+        return self.data_dict
 
     def write_file(self):
         self.iofile.seek(0)
         self.iofile.truncate(0)
         json.dump(self.data_dict, self.iofile)
+        return self.data_dict
 
     def decay(self):
-        self.curr_time = datetime.today()
-        self.old_time = self.data_dict['time']
-        minutes_elapsed = (self.curr_time -
-                           self.old_time) / timedelta(minutes=1)
-        self.data_dict['time'] = datetime.strftime(self.curr_time,
+        curr_time = datetime.today()
+        old_time = self.data_dict['time']
+        minutes_elapsed = (curr_time -
+                           old_time) / timedelta(minutes=1)
+        self.data_dict['time'] = datetime.strftime(curr_time,
                                                    '%Y-%m-%d_%H:%M')
         self.data_dict['level'] *= pow(0.5, (minutes_elapsed / self.half_life))
+        return self.data_dict
 
     def add_caffeine(self):
-        self.level += self.mg_to_add
         self.data_dict['level'] += self.mg_to_add
+        return self.data_dict
 
     def update_time(self):
         self.data_dict['time'] = datetime.strftime(datetime.today(),
                                                    '%Y-%m-%d_%H:%M')
+        return self.data_dict
 
     def __str__(self):
         return (f'Caffeine level is {round(self.data_dict["level"], 1)}'

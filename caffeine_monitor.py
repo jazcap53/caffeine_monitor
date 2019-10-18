@@ -73,7 +73,7 @@ if __name__ == '__main__':
         print('Usage: program_name <mgs_of_caffeine_to_add>')
         sys.exit(0)
 
-    filename = 'caffeine_logging.json'
+    filename = 'caffeine.json'
     my_file = Path(filename)
     if not my_file.is_file():
         outfile = open(filename, 'w')
