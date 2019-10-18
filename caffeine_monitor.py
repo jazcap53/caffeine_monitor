@@ -6,14 +6,11 @@
 
 # Answer question: how many mg of caffeine are in me now?
 
-# 1. read previous time and amount, if any, from file
-# 2. report current time and amount
-# 3. add a new amount (now or at some previous time)
-
 
 from datetime import datetime, timedelta
 import sys
 import json
+from pathlib import Path
 
 
 class CoffeeMonitor:
@@ -39,7 +36,8 @@ class CoffeeMonitor:
     def read_file(self):
         self.data_dict = json.load(self.iofile)
         old_time_float = self.data_dict['time']
-        self.old_time = datetime.strptime(str(old_time_float), '%Y-%m-%d_%H:%M')
+        self.old_time = datetime.strptime(str(old_time_float),
+                                          '%Y-%m-%d_%H:%M')
         level_str = self.data_dict['level']
         self.level = float(level_str)
 
@@ -50,8 +48,10 @@ class CoffeeMonitor:
 
     def decay(self):
         self.curr_time = datetime.today()
-        minutes_elapsed = (self.curr_time - self.old_time) / timedelta(minutes=1)
-        self.data_dict['time'] = datetime.strftime(self.curr_time, '%Y-%m-%d_%H:%M')
+        minutes_elapsed = (self.curr_time -
+                           self.old_time) / timedelta(minutes=1)
+        self.data_dict['time'] = datetime.strftime(self.curr_time,
+                                                   '%Y-%m-%d_%H:%M')
         self.level = self.level * pow(0.5, (minutes_elapsed / self.half_life))
         self.data_dict['level'] = self.level
 
@@ -60,7 +60,8 @@ class CoffeeMonitor:
         self.data_dict['level'] += self.mg_to_add
 
     def update_time(self):
-        self.data_dict['time'] = datetime.strftime(datetime.today(), '%Y-%m-%d_%H:%M')
+        self.data_dict['time'] = datetime.strftime(datetime.today(),
+                                                   '%Y-%m-%d_%H:%M')
 
     def __str__(self):
         return (f'Caffeine level is {round(self.level, 1)} mg at time '
@@ -71,6 +72,16 @@ if __name__ == '__main__':
     if len(sys.argv) > 2:
         print('Usage: program_name <mgs_of_caffeine_to_add>')
         sys.exit(0)
-    with open('caffeine.json', 'r+') as storage:
-        monitor = CoffeeMonitor(storage, int(sys.argv[1]) if len(sys.argv) > 1 else 0)
+
+    filename = 'caffeine_logging.json'
+    my_file = Path(filename)
+    if not my_file.is_file():
+        outfile = open(filename, 'w')
+        time_now = datetime.strftime(datetime.today(), '%Y-%m-%d_%H:%M')
+        start_level = 0
+        json.dump({"time": time_now, "level": start_level}, outfile)
+        outfile.close()
+    with open(filename, 'r+') as storage:
+        monitor = CoffeeMonitor(storage,
+                                int(sys.argv[1]) if len(sys.argv) > 1 else 0)
         monitor.main()
