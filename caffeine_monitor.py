@@ -68,6 +68,14 @@ class CoffeeMonitor:
                 f'{self.data_dict["time"]}')
 
 
+def init_storage(fname):
+    outfile = open(fname, 'w')
+    time_now = datetime.strftime(datetime.today(), '%Y-%m-%d_%H:%M')
+    start_level = 0
+    json.dump({"time": time_now, "level": start_level}, outfile)
+    outfile.close()
+
+
 if __name__ == '__main__':
     if len(sys.argv) > 2:
         print('Usage: program_name <mgs_of_caffeine_to_add>')
@@ -76,11 +84,7 @@ if __name__ == '__main__':
     filename = 'caffeine.json'
     my_file = Path(filename)
     if not my_file.is_file():
-        outfile = open(filename, 'w')
-        time_now = datetime.strftime(datetime.today(), '%Y-%m-%d_%H:%M')
-        start_level = 0
-        json.dump({"time": time_now, "level": start_level}, outfile)
-        outfile.close()
+        init_storage(filename)
     with open(filename, 'r+') as storage:
         monitor = CoffeeMonitor(storage,
                                 int(sys.argv[1]) if len(sys.argv) > 1 else 0)
