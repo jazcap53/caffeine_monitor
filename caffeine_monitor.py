@@ -11,6 +11,11 @@ from datetime import datetime, timedelta
 import sys
 import json
 from pathlib import Path
+import logging
+
+
+logging.basicConfig(filename='caffeine.log', level=logging.INFO,
+                    format='%(message)s')
 
 
 class CoffeeMonitor:
@@ -44,6 +49,12 @@ class CoffeeMonitor:
     def write_file(self):
         self.iofile.seek(0)
         self.iofile.truncate(0)
+        log_mesg = f'level is {round(self.data_dict["level"], 1)} at {self.data_dict["time"]}'
+        if self.mg_to_add:
+            log_mesg = f'{self.mg_to_add} mg added: ' + log_mesg
+            logging.info(log_mesg)
+        else:
+            logging.debug(log_mesg)
         json.dump(self.data_dict, self.iofile)
 
     def decay(self):
