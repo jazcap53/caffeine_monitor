@@ -21,20 +21,20 @@ logging.basicConfig(filename='caffeine_pre_decay.log', level=logging.INFO,
 class CoffeeMonitor:
     half_life = 360  # in minutes
 
-    def __init__(self, iofile, mg=0, pre_decay_mins=0):
+    def __init__(self, iofile, mg=0, mins_ago=0):
         self.iofile = iofile
         self.old_time = None
         self.level = None
         self.curr_time = None
         self.data_dict = {}
         self.mg_to_add = mg
-        self.pre_decay_mins = pre_decay_mins
+        self.mins_ago = mins_ago
 
     def main(self):
         self.read_file()
-        self.decay()
-        if self.pre_decay_mins:
-            self.pre_decay()
+        self.decay_prev_level()
+        if self.mins_ago:
+            self.decay_before_add()
         if self.mg_to_add:
             self.add_caffeine()
         self.update_time()
@@ -59,7 +59,7 @@ class CoffeeMonitor:
             logging.debug(log_mesg)
         json.dump(self.data_dict, self.iofile)
 
-    def decay(self):
+    def decay_prev_level(self):
         self.curr_time = datetime.today()
         minutes_elapsed = (self.curr_time -
                            self.old_time) / timedelta(minutes=1)
@@ -68,9 +68,9 @@ class CoffeeMonitor:
         self.level *= pow(0.5, (minutes_elapsed / self.half_life))
         self.data_dict['level'] = self.level
 
-    def pre_decay(self):
+    def decay_before_add(self):
         curr_time = datetime.today()
-        old_time = curr_time - timedelta(minutes=self.pre_decay_mins)
+        old_time = curr_time - timedelta(minutes=self.mins_ago)
         minutes_elapsed = (curr_time - old_time) / timedelta(minutes=1)
         self.mg_to_add *= pow(0.5, (minutes_elapsed / self.half_life))
 
@@ -97,7 +97,8 @@ def init_storage(fname):
 
 if __name__ == '__main__':
     if len(sys.argv) > 3:
-        print('Usage: program_name <mgs_of_caffeine_to_add> <pre-decay in minutes>')
+        print('Usage: program_name <mgs of caffeine to add> '
+              '<minutes ago caffeine was added>')
         sys.exit(0)
 
     filename = 'caffeine_pre_decay.json'
