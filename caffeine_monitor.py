@@ -21,17 +21,20 @@ logging.basicConfig(filename='caffeine.log', level=logging.INFO,
 class CoffeeMonitor:
     half_life = 360  # in minutes
 
-    def __init__(self, iofile, mg):
+    def __init__(self, iofile, mg=0, mins_ago=0):
         self.iofile = iofile
         self.old_time = None
         self.level = None
         self.curr_time = None
         self.data_dict = {}
         self.mg_to_add = mg
+        self.mins_ago = mins_ago
 
     def main(self):
         self.read_file()
-        self.decay()
+        self.decay_prev_level()
+        if self.mins_ago:
+            self.decay_before_add()
         if self.mg_to_add:
             self.add_caffeine()
         self.update_time()
@@ -40,8 +43,7 @@ class CoffeeMonitor:
 
     def read_file(self):
         self.data_dict = json.load(self.iofile)
-        old_time_float = self.data_dict['time']
-        self.old_time = datetime.strptime(str(old_time_float),
+        self.old_time = datetime.strptime(self.data_dict['time'],
                                           '%Y-%m-%d_%H:%M')
         level_str = self.data_dict['level']
         self.level = float(level_str)
@@ -57,14 +59,20 @@ class CoffeeMonitor:
             logging.debug(log_mesg)
         json.dump(self.data_dict, self.iofile)
 
-    def decay(self):
+    def decay_prev_level(self):
         self.curr_time = datetime.today()
         minutes_elapsed = (self.curr_time -
                            self.old_time) / timedelta(minutes=1)
         self.data_dict['time'] = datetime.strftime(self.curr_time,
                                                    '%Y-%m-%d_%H:%M')
-        self.level = self.level * pow(0.5, (minutes_elapsed / self.half_life))
+        self.level *= pow(0.5, (minutes_elapsed / self.half_life))
         self.data_dict['level'] = self.level
+
+    def decay_before_add(self):
+        curr_time = datetime.today()
+        old_time = curr_time - timedelta(minutes=self.mins_ago)
+        minutes_elapsed = (curr_time - old_time) / timedelta(minutes=1)
+        self.mg_to_add *= pow(0.5, (minutes_elapsed / self.half_life))
 
     def add_caffeine(self):
         self.level += self.mg_to_add
@@ -88,8 +96,9 @@ def init_storage(fname):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 2:
-        print('Usage: program_name <mgs_of_caffeine_to_add>')
+    if len(sys.argv) > 3:
+        print('Usage: program_name <mgs of caffeine to add> '
+              '<minutes ago caffeine was added>')
         sys.exit(0)
 
     filename = 'caffeine.json'
@@ -98,5 +107,6 @@ if __name__ == '__main__':
         init_storage(filename)
     with open(filename, 'r+') as storage:
         monitor = CoffeeMonitor(storage,
-                                int(sys.argv[1]) if len(sys.argv) > 1 else 0)
+                                int(sys.argv[1]) if len(sys.argv) > 1 else 0,
+                                int(sys.argv[2]) if len(sys.argv) > 2 else 0)
         monitor.main()
