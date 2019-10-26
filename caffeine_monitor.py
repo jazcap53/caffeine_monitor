@@ -4,7 +4,11 @@
 # andrew jarcho
 # 2019-10-08
 
-# Answer question: how many mg of caffeine are in me now?
+
+"""
+Give a rough estimate of the quantity of caffeine
+in the user's body, in mg
+"""
 
 
 from datetime import datetime, timedelta
@@ -22,6 +26,12 @@ class CoffeeMonitor:
     half_life = 360  # in minutes
 
     def __init__(self, iofile, mg=0, mins_ago=0):
+        """
+        :param iofile: a .json file handle, open for r+, to store and
+               read a time and caffeine level
+        :param mg: the amount of caffeine consumed by user
+        :param mins_ago: how long ago the caffeine was consumed
+        """
         self.iofile = iofile
         self.old_time = None
         self.level = None
@@ -31,6 +41,7 @@ class CoffeeMonitor:
         self.mins_ago = mins_ago
 
     def main(self):
+        """Driver"""
         self.read_file()
         self.decay_prev_level()
         if self.mins_ago:
@@ -45,8 +56,7 @@ class CoffeeMonitor:
         self.data_dict = json.load(self.iofile)
         self.old_time = datetime.strptime(self.data_dict['time'],
                                           '%Y-%m-%d_%H:%M')
-        level_str = self.data_dict['level']
-        self.level = float(level_str)
+        self.level = float(self.data_dict['level'])
 
     def write_file(self):
         self.iofile.seek(0)
