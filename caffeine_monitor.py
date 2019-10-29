@@ -83,6 +83,7 @@ class CoffeeMonitor:
         old_time = curr_time - timedelta(minutes=self.mins_ago)
         minutes_elapsed = (curr_time - old_time) / timedelta(minutes=1)
         self.mg_to_add *= pow(0.5, (minutes_elapsed / self.half_life))
+        self.mg_to_add = round(self.mg_to_add, 1)
 
     def add_caffeine(self):
         self.level += self.mg_to_add
