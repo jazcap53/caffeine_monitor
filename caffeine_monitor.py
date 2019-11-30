@@ -53,6 +53,7 @@ class CoffeeMonitor:
         print(self)
 
     def read_file(self):
+        """Read initial time and caffeine level from file"""
         self.data_dict = json.load(self.iofile)
         self.old_time = datetime.strptime(self.data_dict['time'],
                                           '%Y-%m-%d_%H:%M')
