@@ -33,9 +33,6 @@ class CoffeeMonitor:
         :param mins_ago: how long ago the caffeine was consumed
         """
         self.iofile = iofile
-        self.old_time = None
-        self.level = None
-        self.curr_time = None
         self.data_dict = {}
         self.mg_to_add = mg
         self.mins_ago = mins_ago
@@ -55,9 +52,8 @@ class CoffeeMonitor:
     def read_file(self):
         """Read initial time and caffeine level from file"""
         self.data_dict = json.load(self.iofile)
-        self.old_time = datetime.strptime(self.data_dict['time'],
-                                          '%Y-%m-%d_%H:%M')
-        self.level = float(self.data_dict['level'])
+        self.data_dict['time'] = datetime.strptime(self.data_dict['time'],
+                                                   '%Y-%m-%d_%H:%M')
 
     def write_file(self):
         self.iofile.seek(0)
@@ -71,13 +67,12 @@ class CoffeeMonitor:
         json.dump(self.data_dict, self.iofile)
 
     def decay_prev_level(self):
-        self.curr_time = datetime.today()
-        minutes_elapsed = (self.curr_time -
-                           self.old_time) / timedelta(minutes=1)
-        self.data_dict['time'] = datetime.strftime(self.curr_time,
+        curr_time = datetime.today()
+        minutes_elapsed = (curr_time -
+                           self.data_dict['time']) / timedelta(minutes=1)
+        self.data_dict['time'] = datetime.strftime(curr_time,
                                                    '%Y-%m-%d_%H:%M')
-        self.level *= pow(0.5, (minutes_elapsed / self.half_life))
-        self.data_dict['level'] = self.level
+        self.data_dict['level'] *= pow(0.5, (minutes_elapsed / self.half_life))
 
     def decay_before_add(self):
         curr_time = datetime.today()
@@ -87,7 +82,6 @@ class CoffeeMonitor:
         self.mg_to_add = round(self.mg_to_add, 1)
 
     def add_caffeine(self):
-        self.level += self.mg_to_add
         self.data_dict['level'] += self.mg_to_add
 
     def update_time(self):
@@ -95,8 +89,8 @@ class CoffeeMonitor:
                                                    '%Y-%m-%d_%H:%M')
 
     def __str__(self):
-        return (f'Caffeine level is {round(self.level, 1)} mg at time '
-                f'{self.data_dict["time"]}')
+        return (f'Caffeine level is {round(self.data_dict["level"], 1)} '
+                f'mg at time {self.data_dict["time"]}')
 
 
 def init_storage(fname):
