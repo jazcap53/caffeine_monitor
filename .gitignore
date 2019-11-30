@@ -5,7 +5,7 @@ __pycache__
 .idea/
 *.bak
 *.txt
-*.json
+*.json*
 caff
-*.log
+*.log*
 *_backup/
