@@ -94,6 +94,7 @@ class CoffeeMonitor:
 
 
 def init_storage(fname):
+    """Create a .json file with initial values for time and level"""
     outfile = open(fname, 'w')
     time_now = datetime.strftime(datetime.today(), '%Y-%m-%d_%H:%M')
     start_level = 0
@@ -110,7 +111,7 @@ if __name__ == '__main__':
     filename = 'caffeine.json'
     my_file = Path(filename)
     if not my_file.is_file():
-        init_storage(filename)
+        init_storage(filename)  # TODO: delete old .log file if any
     with open(filename, 'r+') as storage:
         monitor = CoffeeMonitor(storage,
                                 int(sys.argv[1]) if len(sys.argv) > 1 else 0,
