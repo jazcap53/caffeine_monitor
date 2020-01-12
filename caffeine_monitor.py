@@ -16,9 +16,12 @@ import sys
 import json
 from pathlib import Path
 import logging
+import configparser
 
+config = configparser.ConfigParser()
+config.read('caffeine.ini')
 
-logging.basicConfig(filename='caffeine.log', level=logging.INFO,
+logging.basicConfig(filename=config['caffeine']['log_file'], level=logging.INFO,
                     format='%(message)s')
 
 
@@ -67,6 +70,9 @@ class CoffeeMonitor:
         json.dump(self.data_dict, self.iofile)
 
     def decay_prev_level(self):
+        """
+        Reduce stored level to account for decay since value was last read
+        """
         curr_time = datetime.today()
         minutes_elapsed = (curr_time -
                            self.data_dict['time']) / timedelta(minutes=1)
@@ -108,7 +114,7 @@ if __name__ == '__main__':
               '<minutes ago caffeine was added>')
         sys.exit(0)
 
-    filename = 'caffeine.json'
+    filename = config['caffeine']['json_file']
     my_file = Path(filename)
     if not my_file.is_file():
         init_storage(filename)  # TODO: delete old .log file if any
