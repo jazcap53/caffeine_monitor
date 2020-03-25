@@ -9,26 +9,52 @@
 Give a rough estimate of the quantity of caffeine
 in the user's body, in mg
 """
-
-
 from datetime import datetime, timedelta
 import sys
+import os
 import json
 from pathlib import Path
 import logging
 import configparser
+import argparse
+
+try:
+    environment = os.environ['CAFF_ENV']
+    if environment not in ('prod', 'test'):
+        raise KeyError
+except KeyError:
+    print('Please define environment variable CAFF_ENV as prod or test')
+    sys.exit(1)
 
 config = configparser.ConfigParser()
 config.read('caffeine.ini')
 
-logging.basicConfig(filename=config['caffeine']['log_file'], level=logging.INFO,
+logging.basicConfig(filename=config[environment]['log_file'],
+                    level=logging.INFO,
                     format='%(message)s')
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-t', '--test', action='store_true',
+                    help='Use test environment')
+parser.add_argument('mg', nargs='?', default=0,
+                    help='mg of caffeine to add (may be negative)')
+parser.add_argument('mins', nargs='?', default=0,
+                    help='minutes ago caffeine was added (may be negative)')
+args = parser.parse_args()
+
+if args.test and environment == 'prod':
+    print("Please switch to the test environment with 'export CAFF_ENV=test'")
+    sys.exit(1)
+
+if not args.test and environment == 'test':
+    print("You may switch to the production environment with 'export CAFF_ENV=prod'")
+    sys.exit(1)
 
 
 class CoffeeMonitor:
     half_life = 360  # in minutes
 
-    def __init__(self, iofile, mg=0, mins_ago=0):
+    def __init__(self, iofile, mg=args.mg, mins_ago=args.mins):
         """
         :param iofile: a .json file handle, open for r+, to store and
                read a time and caffeine level
@@ -109,17 +135,17 @@ def init_storage(fname):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 3:
+    if len(sys.argv) > 4:
         print('Usage: program_name <mgs of caffeine to add> '
               '<minutes ago caffeine was added>')
         sys.exit(0)
 
-    filename = config['caffeine']['json_file']
+    filename = config[environment]['json_file']
     my_file = Path(filename)
     if not my_file.is_file():
         init_storage(filename)  # TODO: delete old .log file if any
     with open(filename, 'r+') as storage:
         monitor = CoffeeMonitor(storage,
-                                int(sys.argv[1]) if len(sys.argv) > 1 else 0,
-                                int(sys.argv[2]) if len(sys.argv) > 2 else 0)
+                                int(args.mg),
+                                int(args.mins))
         monitor.main()
