@@ -36,11 +36,15 @@ logging.basicConfig(filename=config[environment]['log_file'],
 parser = argparse.ArgumentParser()
 parser.add_argument('-t', '--test', action='store_true',
                     help='Use test environment')
-parser.add_argument('mg', nargs='?', default=0,
+parser.add_argument('mg', nargs='?', type=int, default=0,
                     help='mg of caffeine to add (may be negative)')
-parser.add_argument('mins', nargs='?', default=0,
+parser.add_argument('mins', nargs='?', type=int, default=0,
                     help='minutes ago caffeine was added (may be negative)')
 args = parser.parse_args()
+
+
+if 'test' in sys.argv[0]:
+    args.test = True
 
 if args.test and environment == 'prod':
     print("Please switch to the test environment with 'export CAFF_ENV=test'")
@@ -51,7 +55,7 @@ if not args.test and environment == 'test':
     sys.exit(1)
 
 
-class CoffeeMonitor:
+class CaffeineMonitor:
     half_life = 360  # in minutes
 
     def __init__(self, iofile, mg=args.mg, mins_ago=args.mins):
@@ -145,7 +149,7 @@ if __name__ == '__main__':
     if not my_file.is_file():
         init_storage(filename)  # TODO: delete old .log file if any
     with open(filename, 'r+') as storage:
-        monitor = CoffeeMonitor(storage,
-                                int(args.mg),
-                                int(args.mins))
+        monitor = CaffeineMonitor(storage,
+                                  int(args.mg),
+                                  int(args.mins))
         monitor.main()
