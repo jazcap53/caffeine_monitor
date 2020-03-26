@@ -18,18 +18,29 @@ import logging
 import configparser
 import argparse
 
-try:
-    environment = os.environ['CAFF_ENV']
-    if environment not in ('prod', 'test'):
-        raise KeyError
-except KeyError:
-    print('Please define environment variable CAFF_ENV as prod or test')
-    sys.exit(1)
 
-config = configparser.ConfigParser()
-config.read('caffeine.ini')
+def check_which_environment():
+    try:
+        which_environment = os.environ['CAFF_ENV']
+        if which_environment not in ('prod', 'test'):
+            raise KeyError
+    except KeyError:
+        print('Please define environment variable CAFF_ENV as prod or test')
+        raise
+    return which_environment
 
-logging.basicConfig(filename=config[environment]['log_file'],
+
+def read_config_file(config_file):
+    config = configparser.ConfigParser()
+    # config.read('caffeine.ini')
+    config.read(config_file)
+    return config
+
+
+current_environment = check_which_environment()
+config = read_config_file('caffeine.ini')
+
+logging.basicConfig(filename=config[current_environment]['log_file'],
                     level=logging.INFO,
                     format='%(message)s')
 
@@ -43,16 +54,20 @@ parser.add_argument('mins', nargs='?', type=int, default=0,
 args = parser.parse_args()
 
 
-if 'test' in sys.argv[0]:
-    args.test = True
+def check_env_match(cur_env):
+    if 'test' in sys.argv[0]:
+        args.test = True
 
-if args.test and environment == 'prod':
-    print("Please switch to the test environment with 'export CAFF_ENV=test'")
-    sys.exit(1)
+    if args.test and cur_env == 'prod':
+        print("Please switch to the test environment with 'export CAFF_ENV=test'")
+        sys.exit(0)
 
-if not args.test and environment == 'test':
-    print("You may switch to the production environment with 'export CAFF_ENV=prod'")
-    sys.exit(1)
+    if not args.test and cur_env == 'test':
+        print("You may switch to the production environment with 'export CAFF_ENV=prod'")
+        sys.exit(0)
+
+
+check_env_match(current_environment)
 
 
 class CaffeineMonitor:
@@ -144,7 +159,7 @@ if __name__ == '__main__':
               '<minutes ago caffeine was added>')
         sys.exit(0)
 
-    filename = config[environment]['json_file']
+    filename = config[current_environment]['json_file']
     my_file = Path(filename)
     if not my_file.is_file():
         init_storage(filename)  # TODO: delete old .log file if any

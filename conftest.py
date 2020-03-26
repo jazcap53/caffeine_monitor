@@ -15,4 +15,3 @@ def c_mon(tmpdir):
     json_data = {"time": fmt_cur_datetime, "level": 48.0}
     json.dump(json_data, json_file)
     return log_file, json_file
-
