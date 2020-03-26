@@ -31,27 +31,30 @@ def check_which_environment():
 
 
 def read_config_file(config_file):
-    config = configparser.ConfigParser()
+    conf = configparser.ConfigParser()
     # config.read('caffeine.ini')
-    config.read(config_file)
-    return config
+    conf.read(config_file)
+    return conf
+
+
+def parse_clas():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-t', '--test', action='store_true',
+                        help='Use test environment')
+    parser.add_argument('mg', nargs='?', type=int, default=0,
+                        help='mg of caffeine to add (may be negative)')
+    parser.add_argument('mins', nargs='?', type=int, default=0,
+                        help='minutes ago caffeine was added (may be negative)')
+    return parser.parse_args()
 
 
 current_environment = check_which_environment()
 config = read_config_file('caffeine.ini')
+args = parse_clas()
 
 logging.basicConfig(filename=config[current_environment]['log_file'],
                     level=logging.INFO,
                     format='%(message)s')
-
-parser = argparse.ArgumentParser()
-parser.add_argument('-t', '--test', action='store_true',
-                    help='Use test environment')
-parser.add_argument('mg', nargs='?', type=int, default=0,
-                    help='mg of caffeine to add (may be negative)')
-parser.add_argument('mins', nargs='?', type=int, default=0,
-                    help='minutes ago caffeine was added (may be negative)')
-args = parser.parse_args()
 
 
 def check_env_match(cur_env):
