@@ -53,18 +53,8 @@ def parse_clas():
     return parser.parse_args()
 
 
-current_environment = check_which_environment()
-config = read_config_file('caffeine.ini')
-args = parse_clas()
-
-logging.basicConfig(filename=config[current_environment]['log_file'],
-                    level=logging.INFO,
-                    format='%(message)s')
-
-
-def check_env_match(cur_env):
-    if 'test' in sys.argv[0]:
-        args.test = True
+def check_cla_match_env(cur_env, args):
+    args.test = True if '-t' in sys.argv or '--test' in sys.argv else False
 
     if args.test and cur_env == 'prod':
         print("Please switch to the test environment with 'export CAFF_ENV=test'")
@@ -75,13 +65,10 @@ def check_env_match(cur_env):
         sys.exit(0)
 
 
-check_env_match(current_environment)
-
-
 class CaffeineMonitor:
     half_life = 360  # in minutes
 
-    def __init__(self, iofile, mg=args.mg, mins_ago=args.mins):
+    def __init__(self, iofile, args):
         """
         :param iofile: a .json file handle, open for r+, to store and
                read a time and caffeine level
@@ -90,8 +77,8 @@ class CaffeineMonitor:
         """
         self.iofile = iofile
         self.data_dict = {}
-        self.mg_to_add = mg
-        self.mins_ago = mins_ago
+        self.mg_to_add = int(args.mg)
+        self.mins_ago = int(args.mins)
 
     def main(self):
         """Driver"""
@@ -167,12 +154,19 @@ if __name__ == '__main__':
               '[minutes ago caffeine was added] [-t | --test flag]')
         sys.exit(0)
 
+    current_environment = check_which_environment()
+    config = read_config_file('caffeine.ini')
+    args = parse_clas()
+
+    check_cla_match_env(current_environment, args)
+    logging.basicConfig(filename=config[current_environment]['log_file'],
+                        level=logging.INFO,
+                        format='%(message)s')
+
     filename = config[current_environment]['json_file']
     my_file = Path(filename)
     if not my_file.is_file():
         init_storage(filename)  # TODO: delete old .log file if any
     with open(filename, 'r+') as storage:
-        monitor = CaffeineMonitor(storage,
-                                  int(args.mg),
-                                  int(args.mins))
+        monitor = CaffeineMonitor(storage, args)
         monitor.main()

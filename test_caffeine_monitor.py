@@ -4,12 +4,12 @@ import pytest
 import sys
 
 from caffeine_monitor import (CaffeineMonitor, check_which_environment,
-                              read_config_file, check_env_match, parse_clas)
+                              read_config_file, check_cla_match_env, parse_clas)
 
 
 def test_can_make_caffeine_monitor_instance(c_mon):
     nmspc = Namespace(mg=100, mins=180)
-    cm = CaffeineMonitor(c_mon[1], nmspc.mg, nmspc.mins)
+    cm = CaffeineMonitor(c_mon[1], nmspc)
     assert isinstance(cm, CaffeineMonitor)
 
 
@@ -31,17 +31,23 @@ def test_read_config_file():
     assert 'log_file' in config['test']
 
 
-def test_check_env_match_with_pytest_and_prod(mocker):
+def test_check_cla_match_env_bad_01(mocker):
     mocker.patch('sys.exit')
-    mocker.patch('sys.argv')
-    # mocker.patch('test_or_prod')
-    sys.argv[0] = 'pytest'
+    args = Namespace(test=True, mg=0, mins=0)
+    test_argv = ['-t']
+    mocker.patch.object(sys, 'argv', test_argv)
     current_environment = 'prod'
-    check_env_match(current_environment)
+    check_cla_match_env(current_environment, args)
     sys.exit.assert_called_once_with(0)
-    sys.argv[0] = 'caff'
+
+
+def test_check_cla_match_env_bad_02(mocker):
+    mocker.patch('sys.exit')
+    args = Namespace(test=False, mg=0, mins=0)
+    test_argv = []
+    mocker.patch.object(sys, 'argv', test_argv)
     current_environment = 'test'
-    check_env_match(current_environment)
+    check_cla_match_env(current_environment, args)
     sys.exit.assert_called_once_with(0)
 
 
