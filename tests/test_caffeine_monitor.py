@@ -3,8 +3,9 @@ import os
 import pytest
 import sys
 
-from caffeine_monitor import (CaffeineMonitor, check_which_environment,
-                              read_config_file, check_cla_match_env, parse_clas)
+from src.caffeine_monitor import (CaffeineMonitor, check_which_environment,
+                                  read_config_file, check_cla_match_env,
+                                  parse_clas)
 
 
 def test_can_make_caffeine_monitor_instance(c_mon):
@@ -22,7 +23,7 @@ def test_bad_caff_env_value_exits(mocker):
 
 
 def test_read_config_file():
-    config = read_config_file('caffeine.ini')
+    config = read_config_file('src/caffeine.ini')
     assert 'prod' in config
     assert 'test' in config
     assert 'json_file' in config['prod']

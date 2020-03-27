@@ -154,7 +154,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     current_environment = check_which_environment()
-    config = read_config_file('caffeine.ini')
+    config = read_config_file('src/caffeine.ini')
     args = parse_clas()
 
     check_cla_match_env(current_environment, args)
