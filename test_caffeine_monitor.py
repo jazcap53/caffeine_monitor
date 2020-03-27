@@ -13,11 +13,12 @@ def test_can_make_caffeine_monitor_instance(c_mon):
     assert isinstance(cm, CaffeineMonitor)
 
 
-def test_bad_caff_env_value_raises(mocker):
+def test_bad_caff_env_value_exits(mocker):
     mocker.patch('os.environ')
+    mocker.patch('sys.exit')
     os.environ['CAFF_ENV'] = 'bongo'
-    with pytest.raises(KeyError):
-        __ = check_which_environment()
+    __ = check_which_environment()
+    assert sys.exit.called_once_with(0)
 
 
 def test_read_config_file():

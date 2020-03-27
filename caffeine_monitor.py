@@ -25,8 +25,9 @@ def check_which_environment():
         if which_environment not in ('prod', 'test'):
             raise KeyError
     except KeyError:
-        print('Please define environment variable CAFF_ENV as prod or test')
-        raise
+        print('\nPlease export environment variable CAFF_ENV as '
+              'prod or test\n')
+        sys.exit(0)
     return which_environment
 
 
