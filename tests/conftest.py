@@ -4,12 +4,13 @@ import pytest
 
 
 @pytest.fixture(scope='function')
-def c_mon(tmpdir):
-    log_file = tmpdir.join('caffeine_test.log')
-    json_file = tmpdir.join('caffeine_test.json')
-    cur_datetime = datetime.now()
-    fmt_cur_datetime = cur_datetime.strftime('%Y-%m-%d_%H:%M')
-    log_file.write(f'48 mg added: level is 48.0 at {fmt_cur_datetime}')
-    json_data = {"time": fmt_cur_datetime, "level": 48.0}
-    json.dump(json_data, json_file)
+def get_test_files(tmpdir):
+    log_file = tmpdir.join('empty_caffeine_test.log')
+    json_file = tmpdir.join('empty_caffeine_test.json')
+    a_datetime = datetime(2020, 4, 1, 12, 51)
+    fmt_a_datetime = a_datetime.strftime('%Y-%m-%d_%H:%M')
+    with open(log_file, 'w') as l_file, open(json_file, 'w') as j_file:
+        l_file.write(f'48 mg added: level is 48.0 at {fmt_a_datetime}')
+        json_data = {"time": fmt_a_datetime, "level": 48.0}
+        json.dump(json_data, j_file)
     return log_file, json_file

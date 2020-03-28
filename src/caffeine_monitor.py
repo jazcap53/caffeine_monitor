@@ -22,7 +22,7 @@ import argparse
 class CaffeineMonitor:
     half_life = 360  # in minutes
 
-    def __init__(self, iofile, args):
+    def __init__(self, iofile, ags):
         """
         :param iofile: a .json file handle, open for r+, to store and
                read a time and caffeine level
@@ -31,8 +31,8 @@ class CaffeineMonitor:
         """
         self.iofile = iofile
         self.data_dict = {}
-        self.mg_to_add = int(args.mg)
-        self.mins_ago = int(args.mins)
+        self.mg_to_add = int(ags.mg)
+        self.mins_ago = int(ags.mins)
 
     def main(self):
         """Driver"""
