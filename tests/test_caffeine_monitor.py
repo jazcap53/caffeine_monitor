@@ -75,21 +75,13 @@ def test_read_file(test_files):
         assert cm.data_dict['time'] == datetime.datetime(2020, 4, 1, 12, 51)
 
 
-def test_write_file(test_files, caplog):
-    with open(test_files[1], 'r+') as j_file_handle, \
-         open(test_files[0], 'r+') as l_file_handle:
-        cm = CaffeineMonitor(j_file_handle, Namespace(mg=140, mins=0,
-                                                      test=True))
-        assert(isinstance(cm, CaffeineMonitor))
-        logging.basicConfig(stream=l_file_handle,
-                            level=logging.DEBUG,
-                            format='%(message)s')
+def test_write_file_add_mg(cm, test_files, caplog):
+    with open(test_files[0], 'r+') as l_file_handle:
         cur_time = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M')
         cm.data_dict = {'level': 140.0, 'time': cur_time}
         caplog.set_level('INFO')
 
-        assert cm.mg_to_add == 140
-        assert cm.mins_ago == 0
+        cm.mg_to_add = 140
 
         cm.write_file()
 
@@ -97,19 +89,13 @@ def test_write_file(test_files, caplog):
         assert len(caplog.records) == 1
 
 
-def test_write_file_02(cm, test_files, caplog):
+def test_write_file_add_no_mg(cm, test_files, caplog):
     with open(test_files[0], 'r+') as l_file_handle:
-        logging.basicConfig(stream=l_file_handle,
-                            level=logging.DEBUG,
-                            format='%(message)s')
         cur_time = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M')
         cm.data_dict = {'level': 140.0, 'time': cur_time}
-        caplog.set_level('INFO')
-
-        cm.mg_to_add = 140
-        cm.mins_ago = 0
+        caplog.set_level('DEBUG')
 
         cm.write_file()
 
-        assert f'140 mg added: level is 140.0 at {cur_time}' in caplog.text
+        assert f'level is 140.0 at {cur_time}' in caplog.text
         assert len(caplog.records) == 1
