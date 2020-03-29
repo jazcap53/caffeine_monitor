@@ -55,7 +55,8 @@ class CaffeineMonitor:
     def write_file(self):
         self.iofile.seek(0)
         self.iofile.truncate(0)
-        log_mesg = f'level is {round(self.data_dict["level"], 1)} at {self.data_dict["time"]}'
+        log_mesg = (f'level is {round(self.data_dict["level"], 1)} '
+                    f'at {self.data_dict["time"]}')
         if self.mg_to_add:
             log_mesg = f'{self.mg_to_add} mg added: ' + log_mesg
             logging.info(log_mesg)

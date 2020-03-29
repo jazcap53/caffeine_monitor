@@ -3,7 +3,7 @@ import os
 import pytest
 import sys
 import datetime
-import logging
+
 
 from src.caffeine_monitor import (CaffeineMonitor, check_which_environment,
                                   read_config_file, check_cla_match_env,
