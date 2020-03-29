@@ -10,9 +10,9 @@ from src.caffeine_monitor import (CaffeineMonitor, check_which_environment,
                                   parse_clas)
 
 
-def test_can_make_caffeine_monitor_instance(get_test_files):
+def test_can_make_caffeine_monitor_instance(test_files):
     nmspc = Namespace(mg=100, mins=180)
-    cm = CaffeineMonitor(get_test_files[1], nmspc)
+    cm = CaffeineMonitor(test_files[1], nmspc)
     assert isinstance(cm, CaffeineMonitor)
     assert cm.mg_to_add == 100
     assert cm.mins_ago == 180
@@ -65,8 +65,8 @@ def test_parse_clas():
         assert args.bongo is None
 
 
-def test_read_file(get_test_files):
-    with open(get_test_files[1], 'r+') as j_file_handle:
+def test_read_file(test_files):
+    with open(test_files[1], 'r+') as j_file_handle:
         cm = CaffeineMonitor(j_file_handle, Namespace(mg=200, mins=360,
                                                       test=True))
         assert(isinstance(cm, CaffeineMonitor))
@@ -75,9 +75,9 @@ def test_read_file(get_test_files):
         assert cm.data_dict['time'] == datetime.datetime(2020, 4, 1, 12, 51)
 
 
-def test_write_file(get_test_files, caplog):
-    with open(get_test_files[1], 'r+') as j_file_handle, \
-         open(get_test_files[0], 'r+') as l_file_handle:
+def test_write_file(test_files, caplog):
+    with open(test_files[1], 'r+') as j_file_handle, \
+         open(test_files[0], 'r+') as l_file_handle:
         cm = CaffeineMonitor(j_file_handle, Namespace(mg=140, mins=0,
                                                       test=True))
         assert(isinstance(cm, CaffeineMonitor))
@@ -90,6 +90,24 @@ def test_write_file(get_test_files, caplog):
 
         assert cm.mg_to_add == 140
         assert cm.mins_ago == 0
+
+        cm.write_file()
+
+        assert f'140 mg added: level is 140.0 at {cur_time}' in caplog.text
+        assert len(caplog.records) == 1
+
+
+def test_write_file_02(cm, test_files, caplog):
+    with open(test_files[0], 'r+') as l_file_handle:
+        logging.basicConfig(stream=l_file_handle,
+                            level=logging.DEBUG,
+                            format='%(message)s')
+        cur_time = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M')
+        cm.data_dict = {'level': 140.0, 'time': cur_time}
+        caplog.set_level('INFO')
+
+        cm.mg_to_add = 140
+        cm.mins_ago = 0
 
         cm.write_file()
 
