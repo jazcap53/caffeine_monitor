@@ -14,6 +14,8 @@ def test_can_make_caffeine_monitor_instance(get_test_files):
     nmspc = Namespace(mg=100, mins=180)
     cm = CaffeineMonitor(get_test_files[1], nmspc)
     assert isinstance(cm, CaffeineMonitor)
+    assert cm.mg_to_add == 100
+    assert cm.mins_ago == 180
 
 
 def test_bad_caff_env_value_exits(mocker):
@@ -73,22 +75,23 @@ def test_read_file(get_test_files):
         assert cm.data_dict['time'] == datetime.datetime(2020, 4, 1, 12, 51)
 
 
-def test_write_file(get_test_files, mocker, caplog):
+def test_write_file(get_test_files, caplog):
     with open(get_test_files[1], 'r+') as j_file_handle, \
          open(get_test_files[0], 'r+') as l_file_handle:
         cm = CaffeineMonitor(j_file_handle, Namespace(mg=140, mins=0,
                                                       test=True))
         assert(isinstance(cm, CaffeineMonitor))
-        mocker.patch('logging.basicConfig')
         logging.basicConfig(stream=l_file_handle,
                             level=logging.DEBUG,
                             format='%(message)s')
         cur_time = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M')
         cm.data_dict = {'level': 140.0, 'time': cur_time}
         caplog.set_level('INFO')
-        cm.write_file()
 
         assert cm.mg_to_add == 140
         assert cm.mins_ago == 0
+
+        cm.write_file()
+
         assert f'140 mg added: level is 140.0 at {cur_time}' in caplog.text
         assert len(caplog.records) == 1
