@@ -13,4 +13,4 @@ def get_test_files(tmpdir):
         l_file.write(f'48 mg added: level is 48.0 at {fmt_a_datetime}')
         json_data = {"time": fmt_a_datetime, "level": 48.0}
         json.dump(json_data, j_file)
-    return log_file, json_file
+    return log_file.strpath, json_file.strpath

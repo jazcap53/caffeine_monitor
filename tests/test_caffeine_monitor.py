@@ -79,17 +79,16 @@ def test_write_file(get_test_files, mocker, caplog):
         cm = CaffeineMonitor(j_file_handle, Namespace(mg=140, mins=0,
                                                       test=True))
         assert(isinstance(cm, CaffeineMonitor))
-        # mocker.patch('logging.basicConfig')
-        # logging.basicConfig(stream=sys.stdout,
-        #                     level=logging.DEBUG,
-        #                     format='%(message)s')
-        # mocker.patch.dict('CaffeineMonitor.data_dict', {'level': 140, 'time': 0})
-        cm.data_dict = {'level': 140, 'time': 0}
-        caplog.set_level('DEBUG', logger=str(get_test_files[0]))
+        mocker.patch('logging.basicConfig')
+        logging.basicConfig(stream=l_file_handle,
+                            level=logging.DEBUG,
+                            format='%(message)s')
+        cur_time = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M')
+        cm.data_dict = {'level': 140.0, 'time': cur_time}
+        caplog.set_level('INFO')
         cm.write_file()
 
-        # out = capsys.readouterr()[0]
         assert cm.mg_to_add == 140
         assert cm.mins_ago == 0
-        # assert out == '140 mg added: level is 140.0 at time 06:25'
+        assert f'140 mg added: level is 140.0 at {cur_time}' in caplog.text
         assert len(caplog.records) == 1
