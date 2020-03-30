@@ -5,6 +5,8 @@ import sys
 import datetime
 import logging
 
+from freezegun import freeze_time
+
 from src.caffeine_monitor import (CaffeineMonitor, check_which_environment,
                                   read_config_file, check_cla_match_env,
                                   parse_clas)
@@ -77,7 +79,7 @@ def test_read_file(test_files):
 
 def test_write_file_add_mg(cm, test_files, caplog):
     with open(test_files[0], 'r+') as l_file_handle:
-        cur_time = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M')
+        cur_time = datetime.datetime.now()  # .strftime('%Y-%m-%d_%H:%M')
         cm.data_dict = {'level': 140.0, 'time': cur_time}
         caplog.set_level('INFO')
 
@@ -91,7 +93,7 @@ def test_write_file_add_mg(cm, test_files, caplog):
 
 def test_write_file_add_no_mg(cm, test_files, caplog):
     with open(test_files[0], 'r+') as l_file_handle:
-        cur_time = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M')
+        cur_time = datetime.datetime.now()  # .strftime('%Y-%m-%d_%H:%M')
         cm.data_dict = {'level': 140.0, 'time': cur_time}
         caplog.set_level('DEBUG')
 
@@ -99,3 +101,15 @@ def test_write_file_add_no_mg(cm, test_files, caplog):
 
         assert f'level is 140.0 at {cur_time}' in caplog.text
         assert len(caplog.records) == 1
+
+
+# def test_decay_prev_level(cm, mocker):
+#     cm.read_file()  # loads cm.data_dict from file
+#     assert cm.data_dict['level'] == 48.0
+#     assert cm.data_dict['time'] == datetime.datetime(2020, 4, 1, 12, 51)
+#     freezer = freeze_time('2020-04-01 18:51')
+#     freezer.start()
+#     cm.decay_prev_level()
+#     freezer.stop()
+#     assert cm.data_dict['level'] == 24.0  # level decays by 50% in 6 hours
+#     assert cm.data_dict['time'] == datetime.datetime(2020, 4, 1, 18, 51)
