@@ -4,7 +4,6 @@ import pytest
 import sys
 from datetime import datetime
 
-
 from freezegun import freeze_time
 
 from src.caffeine_monitor import (CaffeineMonitor, check_which_environment,
@@ -105,13 +104,13 @@ def test_write_file_add_no_mg(cm, test_files, caplog):
         assert len(caplog.records) == 1
 
 
-# def test_decay_prev_level(cm, mocker):
-#     cm.read_file()  # loads cm.data_dict from file
-#     assert cm.data_dict['level'] == 48.0
-#     assert cm.data_dict['time'] == datetime.datetime(2020, 4, 1, 12, 51)
-#     freezer = freeze_time('2020-04-01 18:51')
-#     freezer.start()
-#     cm.decay_prev_level()
-#     freezer.stop()
-#     assert cm.data_dict['level'] == 24.0  # level decays by 50% in 6 hours
-#     assert cm.data_dict['time'] == datetime.datetime(2020, 4, 1, 18, 51)
+def test_decay_prev_level(cm):
+    cm.read_file()  # loads cm.data_dict from file
+    assert cm.data_dict['level'] == 48.0
+    assert cm.data_dict['time'] == datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')
+    freezer = freeze_time('2020-04-01 18:51')
+    freezer.start()
+    cm.decay_prev_level()
+    freezer.stop()
+    assert cm.data_dict['level'] == 24.0  # level decays by 50% in 6 hours
+    assert cm.data_dict['time'] == datetime(2020, 4, 1, 18, 51).strftime('%Y-%m-%d_%H:%M')
