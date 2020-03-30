@@ -2,7 +2,7 @@ from argparse import Namespace
 import os
 import pytest
 import sys
-import datetime
+from datetime import datetime
 
 
 from src.caffeine_monitor import (CaffeineMonitor, check_which_environment,
@@ -72,12 +72,14 @@ def test_read_file(test_files):
         assert(isinstance(cm, CaffeineMonitor))
         cm.read_file()
         assert cm.data_dict['level'] == 48
-        assert cm.data_dict['time'] == datetime.datetime(2020, 4, 1, 12, 51)
+        dt_out = datetime(2020, 4, 1, 12, 51)
+        assert cm.data_dict['time'] == datetime.strftime(dt_out,
+                                                         '%Y-%m-%d_%H:%M')
 
 
 def test_write_file_add_mg(cm, test_files, caplog):
     with open(test_files[0], 'r+') as l_file_handle:
-        cur_time = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M')
+        cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
         cm.data_dict = {'level': 140.0, 'time': cur_time}
         caplog.set_level('INFO')
 
@@ -91,7 +93,7 @@ def test_write_file_add_mg(cm, test_files, caplog):
 
 def test_write_file_add_no_mg(cm, test_files, caplog):
     with open(test_files[0], 'r+') as l_file_handle:
-        cur_time = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M')
+        cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
         cm.data_dict = {'level': 140.0, 'time': cur_time}
         caplog.set_level('DEBUG')
 

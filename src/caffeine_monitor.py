@@ -49,8 +49,8 @@ class CaffeineMonitor:
     def read_file(self):
         """Read initial time and caffeine level from file"""
         self.data_dict = json.load(self.iofile)
-        self.data_dict['time'] = datetime.strptime(self.data_dict['time'],
-                                                   '%Y-%m-%d_%H:%M')
+        # self.data_dict['time'] = datetime.strptime(self.data_dict['time'],
+        #                                            '%Y-%m-%d_%H:%M')
 
     def write_file(self):
         self.iofile.seek(0)
@@ -62,6 +62,8 @@ class CaffeineMonitor:
             logging.info(log_mesg)
         else:
             logging.debug(log_mesg)
+        # self.data_dict['time'] = \
+        #     self.data_dict['time'].strftime('%Y-%m-%d_%H:%M')
         json.dump(self.data_dict, self.iofile)
 
     def decay_prev_level(self):
@@ -69,10 +71,10 @@ class CaffeineMonitor:
         Reduce stored level to account for decay since value was last read
         """
         curr_time = datetime.today()
+        stored_time = datetime.strptime(self.data_dict['time'], '%Y-%m-%d_%H:%M')
         minutes_elapsed = (curr_time -
-                           self.data_dict['time']) / timedelta(minutes=1)
-        self.data_dict['time'] = datetime.strftime(curr_time,
-                                                   '%Y-%m-%d_%H:%M')
+                           stored_time) / timedelta(minutes=1)
+        self.data_dict['time'] = datetime.strftime(curr_time, '%Y-%m-%d_%H:%M')
         self.data_dict['level'] *= pow(0.5, (minutes_elapsed / self.half_life))
 
     def decay_before_add(self):
@@ -86,8 +88,7 @@ class CaffeineMonitor:
         self.data_dict['level'] += self.mg_to_add
 
     def update_time(self):
-        self.data_dict['time'] = datetime.strftime(datetime.today(),
-                                                   '%Y-%m-%d_%H:%M')
+        self.data_dict['time'] = datetime.strftime(datetime.today(), '%Y-%m-%d_%H:%M')
 
     def __str__(self):
         return (f'Caffeine level is {round(self.data_dict["level"], 1)} '
