@@ -114,3 +114,60 @@ def test_decay_prev_level(cm):
     freezer.stop()
     assert cm.data_dict['level'] == 24.0  # level decays by 50% in 6 hours
     assert cm.data_dict['time'] == datetime(2020, 4, 1, 18, 51).strftime('%Y-%m-%d_%H:%M')
+
+
+def test_decay_before_add_360_mins_elapsed(cm):
+    cm.read_file()  # loads cm.data_dict from file
+    assert cm.data_dict['level'] == 48.0
+    assert cm.data_dict['time'] == datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')
+    cm.mg_to_add = 200
+    cm.mins_ago = 360
+    cm.decay_before_add()
+    assert cm.mg_to_add == 100
+
+
+def test_decay_before_add_0_mins_elapsed(cm):
+    cm.read_file()  # loads cm.data_dict from file
+    assert cm.data_dict['level'] == 48.0
+    assert cm.data_dict['time'] == datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')
+    cm.mg_to_add = 200
+    cm.mins_ago = 0
+    cm.decay_before_add()
+    assert cm.mg_to_add == 200
+
+
+def test_add_caffeine(cm):
+    cm.read_file()  # loads cm.data_dict from file
+    assert cm.data_dict['level'] == 48.0
+    cm.mg_to_add = 12
+    cm.add_caffeine()
+    assert cm.data_dict['level'] == 60.0
+
+
+def test_update_time(cm):
+    cm.read_file()  # loads cm.data_dict from file
+    assert cm.data_dict['time'] == datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')
+    freezer = freeze_time('2020-05-01 11:00')
+    freezer.start()
+    cm.update_time()
+    freezer.stop()
+    assert cm.data_dict['time'] == '2020-05-01_11:00'
+
+
+def test_str(cm):
+    cm.read_file()  # loads cm.data_dict from file
+    assert cm.data_dict['level'] == 48.0
+    assert cm.data_dict['time'] == datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')
+    assert str(cm) == 'Caffeine level is 48.0 mg at time 2020-04-01_12:51'
+
+
+def test_main(cm, test_files, capsys):
+    with open(test_files[1], 'r+') as j_file_handle:
+        cm.iofile = j_file_handle
+        cm.mg_to_add = 300
+        cm.mins_ago = 360
+        freezer = freeze_time('2020-04-01 18:51')
+        freezer.start()
+        cm.main()
+        freezer.stop()
+    assert capsys.readouterr()[0] == 'Caffeine level is 174.0 mg at time 2020-04-01_18:51\n'

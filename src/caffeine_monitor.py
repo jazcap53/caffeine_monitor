@@ -65,7 +65,8 @@ class CaffeineMonitor:
 
     def decay_prev_level(self):
         """
-        Reduce stored level to account for decay since value was last read
+        Reduce stored level to account for decay since that value
+        was written
         """
         curr_time = datetime.today()
         stored_time = datetime.strptime(self.data_dict['time'],
@@ -78,6 +79,13 @@ class CaffeineMonitor:
                                              self.half_life))
 
     def decay_before_add(self):
+        """
+        Decay caffeine consumed some time ago (or in the future)
+        before it gets added to current level.
+
+        :return: None
+        Called by: main()
+        """
         curr_time = datetime.today()
         old_time = curr_time - timedelta(minutes=self.mins_ago)
         minutes_elapsed = (curr_time - old_time) / timedelta(minutes=1)
@@ -97,6 +105,9 @@ class CaffeineMonitor:
 
 
 def check_which_environment():
+    """
+    :return: the current environment ('prod' or 'test')
+    """
     try:
         which_environment = os.environ['CAFF_ENV']
         if which_environment not in ('prod', 'test'):
@@ -115,6 +126,10 @@ def read_config_file(config_file):
 
 
 def parse_clas():
+    """
+    Parse the command line arguments
+    :return: an argparse.Namespace instance
+    """
     parser = argparse.ArgumentParser(description='Estimate the quantity '
                                                  'of caffeine (in mg) in the '
                                                  'user\'s body')
@@ -130,15 +145,22 @@ def parse_clas():
     return parser.parse_args()
 
 
-def check_cla_match_env(cur_env, args):
-    args.test = True if '-t' in sys.argv or '--test' in sys.argv else False
+def check_cla_match_env(cur_env, ags):
+    """
+    Exit with message if the current environment does not match
+    the given command line arguments.
+    :param cur_env: the current environment ('test' or 'prod')
+    :param ags: an argparse.Namespace object
+    :return: None
+    """
+    ags.test = True if '-t' in sys.argv or '--test' in sys.argv else False
 
-    if args.test and cur_env == 'prod':
+    if ags.test and cur_env == 'prod':
         print("Please switch to the test environment with "
               "'export CAFF_ENV=test'")
         sys.exit(0)
 
-    if not args.test and cur_env == 'test':
+    if not ags.test and cur_env == 'test':
         print("You may switch to the production environment with "
               "'export CAFF_ENV=prod'")
         sys.exit(0)
