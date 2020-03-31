@@ -26,8 +26,9 @@ class CaffeineMonitor:
         """
         :param iofile: a .json file handle, open for r+, to store and
                read a time and caffeine level
-        :param mg: the amount of caffeine consumed by user
-        :param mins_ago: how long ago the caffeine was consumed
+        :param ags: an argparse.Namespace object with .mg as the amount
+                    of caffeine consumed and .mins as how long ago the
+                    caffeine was consumed
         """
         self.iofile = iofile
         self.data_dict = {}
@@ -49,8 +50,6 @@ class CaffeineMonitor:
     def read_file(self):
         """Read initial time and caffeine level from file"""
         self.data_dict = json.load(self.iofile)
-        # self.data_dict['time'] = datetime.strptime(self.data_dict['time'],
-        #                                            '%Y-%m-%d_%H:%M')
 
     def write_file(self):
         self.iofile.seek(0)
@@ -62,8 +61,6 @@ class CaffeineMonitor:
             logging.info(log_mesg)
         else:
             logging.debug(log_mesg)
-        # self.data_dict['time'] = \
-        #     self.data_dict['time'].strftime('%Y-%m-%d_%H:%M')
         json.dump(self.data_dict, self.iofile)
 
     def decay_prev_level(self):
@@ -71,11 +68,14 @@ class CaffeineMonitor:
         Reduce stored level to account for decay since value was last read
         """
         curr_time = datetime.today()
-        stored_time = datetime.strptime(self.data_dict['time'], '%Y-%m-%d_%H:%M')
+        stored_time = datetime.strptime(self.data_dict['time'],
+                                        '%Y-%m-%d_%H:%M')
         minutes_elapsed = (curr_time -
                            stored_time) / timedelta(minutes=1)
-        self.data_dict['time'] = datetime.strftime(curr_time, '%Y-%m-%d_%H:%M')
-        self.data_dict['level'] *= pow(0.5, (minutes_elapsed / self.half_life))
+        self.data_dict['time'] = datetime.strftime(curr_time,
+                                                   '%Y-%m-%d_%H:%M')
+        self.data_dict['level'] *= pow(0.5, (minutes_elapsed /
+                                             self.half_life))
 
     def decay_before_add(self):
         curr_time = datetime.today()
@@ -88,7 +88,8 @@ class CaffeineMonitor:
         self.data_dict['level'] += self.mg_to_add
 
     def update_time(self):
-        self.data_dict['time'] = datetime.strftime(datetime.today(), '%Y-%m-%d_%H:%M')
+        self.data_dict['time'] = datetime.strftime(datetime.today(),
+                                                   '%Y-%m-%d_%H:%M')
 
     def __str__(self):
         return (f'Caffeine level is {round(self.data_dict["level"], 1)} '
@@ -123,8 +124,9 @@ def parse_clas():
                         help='mg of caffeine to add (may be negative, 0, or '
                              'omitted)')
     parser.add_argument('mins', nargs='?', type=int, default=0,
-                        help='minutes ago caffeine was added (may be negative, '
-                        '0, or omitted)')
+                        help='minutes ago caffeine was added '
+                             '(may be negative, 0, or '
+                             'omitted)')
     return parser.parse_args()
 
 
@@ -132,11 +134,13 @@ def check_cla_match_env(cur_env, args):
     args.test = True if '-t' in sys.argv or '--test' in sys.argv else False
 
     if args.test and cur_env == 'prod':
-        print("Please switch to the test environment with 'export CAFF_ENV=test'")
+        print("Please switch to the test environment with "
+              "'export CAFF_ENV=test'")
         sys.exit(0)
 
     if not args.test and cur_env == 'test':
-        print("You may switch to the production environment with 'export CAFF_ENV=prod'")
+        print("You may switch to the production environment with "
+              "'export CAFF_ENV=prod'")
         sys.exit(0)
 
 
