@@ -2,13 +2,14 @@ from argparse import Namespace
 import os
 import pytest
 import sys
+import json
 from datetime import datetime
 
 from freezegun import freeze_time
 
 from src.caffeine_monitor import (CaffeineMonitor, check_which_environment,
                                   read_config_file, check_cla_match_env,
-                                  parse_clas)
+                                  parse_clas, init_storage)
 
 
 def test_can_make_caffeine_monitor_instance(test_files):
@@ -171,3 +172,21 @@ def test_main(cm, test_files, capsys):
         cm.main()
         freezer.stop()
     assert capsys.readouterr()[0] == 'Caffeine level is 174.0 mg at time 2020-04-01_18:51\n'
+
+
+def test_init_storage_bad_filename_raises_oserror():
+    with pytest.raises(OSError):
+        init_storage('a/b')
+
+
+def test_init_storage_stores_good_json_file(tmpdir):
+    filename = tmpdir.join('delete_me.json')
+    freezer = freeze_time('2020-03-26 14:13')
+    freezer.start()
+    init_storage(filename)
+    freezer.stop()
+    with open(filename) as file_handle:
+        line_read = json.load(file_handle)
+        assert line_read == {'time': '2020-03-26_14:13', 'level': 0}
+        file_handle.close()
+    os.remove(filename)
