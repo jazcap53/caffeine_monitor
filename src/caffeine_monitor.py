@@ -168,11 +168,23 @@ def check_cla_match_env(cur_env, ags):
 
 def init_storage(fname):
     """Create a .json file with initial values for time and level"""
-    outfile = open(fname, 'w')
+    try:
+        outfile = open(fname, 'w')
+    except OSError as er:
+        print('Unable to create .json file in `init_storage()`', er)
+        raise
     time_now = datetime.strftime(datetime.today(), '%Y-%m-%d_%H:%M')
     start_level = 0
     json.dump({"time": time_now, "level": start_level}, outfile)
     outfile.close()
+
+
+def delete_old_logfile(fname):
+    try:
+        os.remove(fname)
+        return True
+    except OSError:
+        return False
 
 
 if __name__ == '__main__':
@@ -190,10 +202,18 @@ if __name__ == '__main__':
                         level=logging.INFO,
                         format='%(message)s')
 
-    filename = config[current_environment]['json_file']
-    my_file = Path(filename)
+    json_filename = config[current_environment]['json_file']
+    log_filename = config[current_environment]['log_file']
+    my_file = Path(json_filename)
     if not my_file.is_file():
-        init_storage(filename)  # TODO: delete old .log file if any
-    with open(filename, 'r+') as storage:
-        monitor = CaffeineMonitor(storage, args)
-        monitor.main()
+        init_storage(json_filename)
+        delete_old_logfile(log_filename)  # if it exists
+    try:
+        file = open(json_filename, 'r+')
+    except OSError as e:
+        print('Unable to open .json file', e)
+        raise
+    else:
+        with file:
+            monitor = CaffeineMonitor(file, args)
+            monitor.main()
