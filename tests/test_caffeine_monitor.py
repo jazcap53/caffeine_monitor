@@ -9,7 +9,7 @@ from freezegun import freeze_time
 
 from src.caffeine_monitor import (CaffeineMonitor, check_which_environment,
                                   read_config_file, check_cla_match_env,
-                                  parse_clas, init_storage)
+                                  parse_clas, init_storage, delete_old_logfile)
 
 
 def test_can_make_caffeine_monitor_instance(test_files):
@@ -190,3 +190,19 @@ def test_init_storage_stores_good_json_file(tmpdir):
         assert line_read == {'time': '2020-03-26_14:13', 'level': 0}
         file_handle.close()
     os.remove(filename)
+
+
+def test_delete_old_logfile_success(tmpdir):
+    filename = tmpdir.join('bogus.log')
+    with open(filename, 'w') as handle:
+        handle.close()
+    assert delete_old_logfile(filename)
+
+
+def test_delete_old_logfile_failure(tmpdir):
+    name_string = 'bogus.log'
+    filename = tmpdir.join(name_string)
+    while os.path.isfile(filename):  # make *sure* file doesn't exist
+        name_string += 'x'
+        filename = tmpdir.join(name_string)
+    assert not delete_old_logfile(filename)
