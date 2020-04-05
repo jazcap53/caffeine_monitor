@@ -6,6 +6,7 @@
 import os
 import sys
 import argparse
+import configparser
 
 
 def check_which_environment():
@@ -41,3 +42,9 @@ def parse_args(args):
                              '(may be negative, 0, or '
                              'omitted)')
     return parser.parse_args(args)
+
+
+def read_config_file(config_file):
+    conf = configparser.ConfigParser()
+    conf.read(config_file)
+    return conf

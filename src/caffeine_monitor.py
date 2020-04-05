@@ -15,9 +15,8 @@ import os
 import json
 from pathlib import Path
 import logging
-import configparser
 
-from src.utils import check_which_environment, parse_args
+from src.utils import check_which_environment, parse_args, read_config_file
 
 
 class CaffeineMonitor:
@@ -103,12 +102,6 @@ class CaffeineMonitor:
     def __str__(self):
         return (f'Caffeine level is {round(self.data_dict["level"], 1)} '
                 f'mg at time {self.data_dict["time"]}')
-
-
-def read_config_file(config_file):
-    conf = configparser.ConfigParser()
-    conf.read(config_file)
-    return conf
 
 
 def check_cla_match_env(cur_env, ags):
