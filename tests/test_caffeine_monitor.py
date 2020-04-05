@@ -1,10 +1,11 @@
 from argparse import Namespace
 import os
-import pytest
 import sys
 import json
 from datetime import datetime
 
+import pytest
+import pytest_mock
 from freezegun import freeze_time
 
 from src.caffeine_monitor import (CaffeineMonitor, check_which_environment,
@@ -206,3 +207,21 @@ def test_delete_old_logfile_failure(tmpdir):
         name_string += 'x'
         filename = tmpdir.join(name_string)
     assert not delete_old_logfile(filename)
+
+
+def test_check_which_environment_unset(mocker):
+    mocker.patch('sys.exit')
+    mocker.patch.dict('os.environ', {})
+    check_which_environment()
+    assert sys.exit.called_once_with(0)
+
+
+def test_check_which_environment_set_test(mocker):
+    mocker.patch.dict('os.environ', {'CAFF_ENV': 'prod'})
+    assert check_which_environment() == 'prod'
+
+
+def test_check_which_environment_set_prod(mocker):
+    mocker.patch.dict('os.environ', {'CAFF_ENV': 'test'})
+    assert check_which_environment() == 'test'
+
