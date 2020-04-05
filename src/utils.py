@@ -23,7 +23,7 @@ def check_which_environment():
     return which_environment
 
 
-def parse_clas():
+def parse_args(args):
     """
     Parse the command line arguments
     :return: an argparse.Namespace instance
@@ -40,4 +40,4 @@ def parse_clas():
                         help='minutes ago caffeine was added '
                              '(may be negative, 0, or '
                              'omitted)')
-    return parser.parse_args()
+    return parser.parse_args(args)

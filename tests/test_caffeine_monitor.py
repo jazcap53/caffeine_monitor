@@ -8,9 +8,10 @@ import pytest
 import pytest_mock
 from freezegun import freeze_time
 
-from src.caffeine_monitor import (CaffeineMonitor, check_which_environment,
+from src.caffeine_monitor import (CaffeineMonitor,
                                   read_config_file, check_cla_match_env,
-                                  parse_clas, init_storage, delete_old_logfile)
+                                  init_storage, delete_old_logfile)
+from src.utils import check_which_environment, parse_args
 
 
 def test_can_make_caffeine_monitor_instance(test_files):
@@ -59,13 +60,28 @@ def test_check_cla_match_env_bad_02(mocker):
     sys.exit.assert_called_once_with(0)
 
 
-def test_parse_clas():
-    args = parse_clas()
+def test_parse_args():
+    args = parse_args(sys.argv[1:])
     assert args.mg is not None
     assert args.mins is not None
     assert args.test is not None
     with pytest.raises(AttributeError):
         assert args.bongo is None
+
+
+def test_parse_args_with_t():
+    args = parse_args(['-t'])
+    assert args.test
+
+
+def test_parse_args_with_200():
+    args = parse_args(['200'])
+    assert args.mg == 200
+
+
+def test_parse_args_with_200_360():
+    args = parse_args(['200', '360'])
+    assert args.mins == 360
 
 
 def test_read_file(test_files):

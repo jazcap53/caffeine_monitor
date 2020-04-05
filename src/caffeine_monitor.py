@@ -17,7 +17,7 @@ from pathlib import Path
 import logging
 import configparser
 
-from src.utils import check_which_environment, parse_clas
+from src.utils import check_which_environment, parse_args
 
 
 class CaffeineMonitor:
@@ -160,7 +160,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     current_environment = check_which_environment()
-    args = parse_clas()
+    args = parse_args(sys.argv[1:])
     config = read_config_file('src/caffeine.ini')
 
     check_cla_match_env(current_environment, args)
