@@ -30,7 +30,7 @@ def test_bad_caff_env_value_exits(mocker):
     assert sys.exit.called_once_with(0)
 
 
-def test_read_config_file():
+def test_read_config_file_real():
     config = read_config_file('src/caffeine.ini')
     assert 'prod' in config
     assert 'test' in config
@@ -241,3 +241,21 @@ def test_check_which_environment_set_prod(mocker):
     mocker.patch.dict('os.environ', {'CAFF_ENV': 'test'})
     assert check_which_environment() == 'test'
 
+
+def test_read_config_file_fake(tmpdir):
+    fh = tmpdir.join("config.ini")
+    fh.write('''\
+[prod]
+json_file = src/caffeine_production.json
+log_file = src/caffeine_production.log
+
+[test]
+json_file = tests/caff_test.json
+log_file = tests/caff_test.log
+    ''')
+    config = read_config_file(fh)
+    assert config.sections() == ['prod', 'test']
+    assert config['prod'], {'json_file': 'src/caffeine_production.json',
+                            'log_file': 'src/caffeine_production.log'}
+    assert config['test'], {'json_file': 'tests/caff_test.json',
+                            'log_file': 'tests/caff_test.log'}

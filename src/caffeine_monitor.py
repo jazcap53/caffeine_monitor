@@ -11,12 +11,12 @@ in the user's body, in mg
 """
 from datetime import datetime, timedelta
 import sys
-import os
 import json
 from pathlib import Path
 import logging
 
-from src.utils import check_which_environment, parse_args, read_config_file
+from src.utils import check_which_environment, parse_args, read_config_file, \
+                      check_cla_match_env, init_storage, delete_old_logfile
 
 
 class CaffeineMonitor:
@@ -102,48 +102,6 @@ class CaffeineMonitor:
     def __str__(self):
         return (f'Caffeine level is {round(self.data_dict["level"], 1)} '
                 f'mg at time {self.data_dict["time"]}')
-
-
-def check_cla_match_env(cur_env, ags):
-    """
-    Exit with message if the current environment does not match
-    the given command line arguments.
-    :param cur_env: the current environment ('test' or 'prod')
-    :param ags: an argparse.Namespace object
-    :return: None
-    """
-    ags.test = True if '-t' in sys.argv or '--test' in sys.argv else False
-
-    if ags.test and cur_env == 'prod':
-        print("Please switch to the test environment with "
-              "'export CAFF_ENV=test'")
-        sys.exit(0)
-
-    if not ags.test and cur_env == 'test':
-        print("You may switch to the production environment with "
-              "'export CAFF_ENV=prod'")
-        sys.exit(0)
-
-
-def init_storage(fname):
-    """Create a .json file with initial values for time and level"""
-    try:
-        outfile = open(fname, 'w')
-    except OSError as er:
-        print('Unable to create .json file in `init_storage()`', er)
-        raise
-    time_now = datetime.strftime(datetime.today(), '%Y-%m-%d_%H:%M')
-    start_level = 0
-    json.dump({"time": time_now, "level": start_level}, outfile)
-    outfile.close()
-
-
-def delete_old_logfile(fname):
-    try:
-        os.remove(fname)
-        return True
-    except OSError:
-        return False
 
 
 if __name__ == '__main__':
