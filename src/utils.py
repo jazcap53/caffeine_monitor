@@ -9,6 +9,8 @@ import argparse
 import configparser
 from datetime import datetime
 import json
+from pathlib import Path
+import logging
 
 
 def check_which_environment():
@@ -92,3 +94,27 @@ def delete_old_logfile(fname):
         return True
     except OSError:
         return False
+
+
+def setup():
+    if len(sys.argv) > 4:
+        print('Usage: program_name [mgs of caffeine to add] '
+              '[minutes ago caffeine was added] [-t | --test flag]')
+        sys.exit(0)
+
+    current_environment = check_which_environment()
+    args = parse_args(sys.argv[1:])
+    config = read_config_file('src/caffeine.ini')
+
+    check_cla_match_env(current_environment, args)
+    logging.basicConfig(filename=config[current_environment]['log_file'],
+                        level=logging.INFO,
+                        format='%(message)s')
+
+    json_filename = config[current_environment]['json_file']
+    log_filename = config[current_environment]['log_file']
+    my_file = Path(json_filename)
+    if not my_file.is_file():
+        init_storage(json_filename)
+        delete_old_logfile(log_filename)  # if it exists
+    return json_filename, args
