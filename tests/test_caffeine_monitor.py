@@ -5,13 +5,11 @@ import json
 from datetime import datetime
 
 import pytest
-import pytest_mock
 from freezegun import freeze_time
 
 from src.caffeine_monitor import (CaffeineMonitor,
                                   read_config_file, check_cla_match_env,
                                   init_storage, delete_old_logfile)
-from src.utils import check_which_environment, parse_args, set_up
 
 
 def test_can_make_caffeine_monitor_instance(test_files):
@@ -20,14 +18,6 @@ def test_can_make_caffeine_monitor_instance(test_files):
     assert isinstance(cm, CaffeineMonitor)
     assert cm.mg_to_add == 100
     assert cm.mins_ago == 180
-
-
-def test_bad_caff_env_value_exits(mocker):
-    mocker.patch('os.environ')
-    mocker.patch('sys.exit')
-    os.environ['CAFF_ENV'] = 'bongo'
-    __ = check_which_environment()
-    assert sys.exit.called_once_with(0)
 
 
 def test_read_config_file_real():
@@ -58,30 +48,6 @@ def test_check_cla_match_env_bad_02(mocker):
     current_environment = 'test'
     check_cla_match_env(current_environment, args)
     sys.exit.assert_called_once_with(0)
-
-
-def test_parse_args():
-    args = parse_args(sys.argv[1:])
-    assert args.mg is not None
-    assert args.mins is not None
-    assert args.test is not None
-    with pytest.raises(AttributeError):
-        assert args.bongo is None
-
-
-def test_parse_args_with_t():
-    args = parse_args(['-t'])
-    assert args.test
-
-
-def test_parse_args_with_200():
-    args = parse_args(['200'])
-    assert args.mg == 200
-
-
-def test_parse_args_with_200_360():
-    args = parse_args(['200', '360'])
-    assert args.mins == 360
 
 
 def test_read_file(test_files):
@@ -225,23 +191,6 @@ def test_delete_old_logfile_failure(tmpdir):
     assert not delete_old_logfile(filename)
 
 
-def test_check_which_environment_unset(mocker):
-    mocker.patch('sys.exit')
-    mocker.patch.dict('os.environ', {})
-    check_which_environment()
-    assert sys.exit.called_once_with(0)
-
-
-def test_check_which_environment_set_test(mocker):
-    mocker.patch.dict('os.environ', {'CAFF_ENV': 'prod'})
-    assert check_which_environment() == 'prod'
-
-
-def test_check_which_environment_set_prod(mocker):
-    mocker.patch.dict('os.environ', {'CAFF_ENV': 'test'})
-    assert check_which_environment() == 'test'
-
-
 def test_read_config_file_fake(tmpdir):
     fh = tmpdir.join("config.ini")
     fh.write('''\
@@ -259,11 +208,3 @@ log_file = tests/caff_test.log
                             'log_file': 'src/caffeine_production.log'}
     assert config['test'], {'json_file': 'tests/caff_test.json',
                             'log_file': 'tests/caff_test.log'}
-
-
-def test_set_up(mocker):
-    mocker.patch('sys.argv')
-    sys.argv = ['pytest', '0', '0', '-t']
-    json_filename, args = set_up()
-    assert json_filename == 'tests/caff_test.json'
-    assert args == Namespace(mg=0, mins=0, test=True)
