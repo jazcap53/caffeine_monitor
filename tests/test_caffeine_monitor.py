@@ -11,7 +11,7 @@ from freezegun import freeze_time
 from src.caffeine_monitor import (CaffeineMonitor,
                                   read_config_file, check_cla_match_env,
                                   init_storage, delete_old_logfile)
-from src.utils import check_which_environment, parse_args
+from src.utils import check_which_environment, parse_args, set_up
 
 
 def test_can_make_caffeine_monitor_instance(test_files):
@@ -259,3 +259,11 @@ log_file = tests/caff_test.log
                             'log_file': 'src/caffeine_production.log'}
     assert config['test'], {'json_file': 'tests/caff_test.json',
                             'log_file': 'tests/caff_test.log'}
+
+
+def test_set_up(mocker):
+    mocker.patch('sys.argv')
+    sys.argv = ['pytest', '0', '0', '-t']
+    json_filename, args = set_up()
+    assert json_filename == 'tests/caff_test.json'
+    assert args == Namespace(mg=0, mins=0, test=True)

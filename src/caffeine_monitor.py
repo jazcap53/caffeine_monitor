@@ -17,7 +17,7 @@ import logging
 
 from src.utils import check_which_environment, parse_args, read_config_file, \
                       check_cla_match_env, init_storage, delete_old_logfile
-from src.utils import setup
+from src.utils import set_up
 
 
 class CaffeineMonitor:
@@ -106,7 +106,7 @@ class CaffeineMonitor:
 
 
 if __name__ == '__main__':
-    json_filename, args = setup()
+    json_filename, args = set_up()
 
     try:
         file = open(json_filename, 'r+')

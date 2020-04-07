@@ -96,7 +96,7 @@ def delete_old_logfile(fname):
         return False
 
 
-def setup():
+def set_up():
     if len(sys.argv) > 4:
         print('Usage: program_name [mgs of caffeine to add] '
               '[minutes ago caffeine was added] [-t | --test flag]')
