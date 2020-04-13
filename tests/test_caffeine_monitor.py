@@ -8,8 +8,6 @@ import pytest
 from freezegun import freeze_time
 
 from src.caffeine_monitor import CaffeineMonitor
-from src.utils import (read_config_file, check_cla_match_env, init_storage,
-                       delete_old_logfile)
 
 
 def test_can_make_caffeine_monitor_instance(test_files):
@@ -18,36 +16,6 @@ def test_can_make_caffeine_monitor_instance(test_files):
     assert isinstance(cm, CaffeineMonitor)
     assert cm.mg_to_add == 100
     assert cm.mins_ago == 180
-
-
-def test_read_config_file_real():
-    config = read_config_file('src/caffeine.ini')
-    assert 'prod' in config
-    assert 'test' in config
-    assert 'json_file' in config['prod']
-    assert 'json_file' in config['test']
-    assert 'log_file' in config['prod']
-    assert 'log_file' in config['test']
-
-
-def test_check_cla_match_env_bad_01(mocker):
-    mocker.patch('sys.exit')
-    args = Namespace(test=True, mg=0, mins=0)
-    test_argv = ['-t']
-    mocker.patch.object(sys, 'argv', test_argv)
-    current_environment = 'prod'
-    check_cla_match_env(current_environment, args)
-    sys.exit.assert_called_once_with(0)
-
-
-def test_check_cla_match_env_bad_02(mocker):
-    mocker.patch('sys.exit')
-    args = Namespace(test=False, mg=0, mins=0)
-    test_argv = []
-    mocker.patch.object(sys, 'argv', test_argv)
-    current_environment = 'test'
-    check_cla_match_env(current_environment, args)
-    sys.exit.assert_called_once_with(0)
 
 
 def test_read_file(test_files):
@@ -155,56 +123,3 @@ def test_main(cm, test_files, capsys):
         cm.main()
         freezer.stop()
     assert capsys.readouterr()[0] == 'Caffeine level is 174.0 mg at time 2020-04-01_18:51\n'
-
-
-def test_init_storage_bad_filename_raises_oserror():
-    with pytest.raises(OSError):
-        init_storage('a/b')
-
-
-def test_init_storage_stores_good_json_file(tmpdir):
-    filename = tmpdir.join('delete_me.json')
-    freezer = freeze_time('2020-03-26 14:13')
-    freezer.start()
-    init_storage(filename)
-    freezer.stop()
-    with open(filename) as file_handle:
-        line_read = json.load(file_handle)
-        assert line_read == {'time': '2020-03-26_14:13', 'level': 0}
-        file_handle.close()
-    os.remove(filename)
-
-
-def test_delete_old_logfile_success(tmpdir):
-    filename = tmpdir.join('bogus.log')
-    with open(filename, 'w') as handle:
-        handle.close()
-    assert delete_old_logfile(filename)
-
-
-def test_delete_old_logfile_failure(tmpdir):
-    name_string = 'bogus.log'
-    filename = tmpdir.join(name_string)
-    while os.path.isfile(filename):  # make *sure* file doesn't exist
-        name_string += 'x'
-        filename = tmpdir.join(name_string)
-    assert not delete_old_logfile(filename)
-
-
-def test_read_config_file_fake(tmpdir):
-    fh = tmpdir.join("config.ini")
-    fh.write('''\
-[prod]
-json_file = src/caffeine_production.json
-log_file = src/caffeine_production.log
-
-[test]
-json_file = tests/caff_test.json
-log_file = tests/caff_test.log
-    ''')
-    config = read_config_file(fh)
-    assert config.sections() == ['prod', 'test']
-    assert config['prod'], {'json_file': 'src/caffeine_production.json',
-                            'log_file': 'src/caffeine_production.log'}
-    assert config['test'], {'json_file': 'tests/caff_test.json',
-                            'log_file': 'tests/caff_test.log'}
