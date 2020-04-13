@@ -88,17 +88,12 @@ def init_storage(fname):
 def delete_old_logfile(fname):
     try:
         os.remove(fname)
-        return True
+        return True  # return value only used by testing code at present
     except OSError:
-        return False
+        return False  # ditto
 
 
 def set_up():
-    if len(sys.argv) > 4:
-        print('Usage: program_name [mgs of caffeine to add] '
-              '[minutes ago caffeine was added] [-t | --test flag]')
-        sys.exit(0)
-
     current_environment = check_which_environment()
     args = parse_args(sys.argv[1:])
     config = read_config_file('src/caffeine.ini')
