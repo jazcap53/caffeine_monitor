@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 import logging
 
+CONFIG_FILENAME = 'src/caffeine.ini'
 
 def check_which_environment():
     """
@@ -75,14 +76,13 @@ def check_cla_match_env(cur_env, ags):
 def init_storage(fname):
     """Create a .json file with initial values for time and level"""
     try:
-        outfile = open(fname, 'w')
+        with open(fname, 'w') as outfile:
+            time_now = datetime.strftime(datetime.today(), '%Y-%m-%d_%H:%M')
+            start_level = 0
+            json.dump({"time": time_now, "level": start_level}, outfile)
     except OSError as er:
         print('Unable to create .json file in `init_storage()`', er)
         raise
-    time_now = datetime.strftime(datetime.today(), '%Y-%m-%d_%H:%M')
-    start_level = 0
-    json.dump({"time": time_now, "level": start_level}, outfile)
-    outfile.close()
 
 
 def delete_old_logfile(fname):
@@ -96,7 +96,7 @@ def delete_old_logfile(fname):
 def set_up():
     current_environment = check_which_environment()
     args = parse_args(sys.argv[1:])
-    config = read_config_file('src/caffeine.ini')
+    config = read_config_file(CONFIG_FILENAME)
 
     check_cla_match_env(current_environment, args)
     logging.basicConfig(filename=config[current_environment]['log_file'],
