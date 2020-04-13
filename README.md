@@ -6,13 +6,15 @@
 *This code is for entertainment use only.*
 
 ##### Prerequisites
-A linux system, with Python 3.7 or higher installed. The code has been tested so far only
-on a machine running Fedora 31 and Python 3.7.  
-Pytest must be installed if you want to run the unit tests.
+A linux system, with Python 3.7 or higher installed.  
+Run `pip install -r requirements.txt` to install other prerequisites.  
+So far, the code has been tested only on a machine running Fedora 31 and Python 3.7.  
 
 ##### Overview
-This script uses a simple exponential decay function to calculate the approximate level of
-caffeine in the user's body. It assumes a half-life of six hours for caffeine.  
+This script uses a simple 
+[exponential decay function](https://github.com/jazcap53/caffeine_monitor/blob/2d2dd2927cc8e5b97806ce00d0a0c1c0ccc6c0eb/src/caffeine_monitor.py#L79-L80) 
+to calculate the approximate level of
+caffeine in the user's body. It assumes a half-life of 360 minutes for caffeine.  
 
 When called with no arguments, the script displays its estimate of that level.  
 When called with one argument, it adds that number of mg of caffeine to the level.  
