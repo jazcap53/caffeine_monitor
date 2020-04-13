@@ -5,6 +5,7 @@ __pycache__
 .idea/
 *.bak
 *.txt
+!requirements.txt
 *.json*
 caff
 *.log*
