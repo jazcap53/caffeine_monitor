@@ -10,13 +10,9 @@ Give a rough estimate of the quantity of caffeine
 in the user's body, in mg
 """
 from datetime import datetime, timedelta
-import sys
 import json
-from pathlib import Path
 import logging
 
-from src.utils import check_which_environment, parse_args, read_config_file, \
-                      check_cla_match_env, init_storage, delete_old_logfile
 from src.utils import set_up
 
 

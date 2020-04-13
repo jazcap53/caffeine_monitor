@@ -7,9 +7,9 @@ from datetime import datetime
 import pytest
 from freezegun import freeze_time
 
-from src.caffeine_monitor import (CaffeineMonitor,
-                                  read_config_file, check_cla_match_env,
-                                  init_storage, delete_old_logfile)
+from src.caffeine_monitor import CaffeineMonitor
+from src.utils import (read_config_file, check_cla_match_env, init_storage,
+                       delete_old_logfile)
 
 
 def test_can_make_caffeine_monitor_instance(test_files):

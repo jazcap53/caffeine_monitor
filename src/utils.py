@@ -17,11 +17,8 @@ def check_which_environment():
     """
     :return: the current environment ('prod' or 'test')
     """
-    try:
-        which_environment = os.environ['CAFF_ENV']
-        if which_environment not in ('prod', 'test'):
-            raise KeyError
-    except KeyError:
+    which_environment = os.environ['CAFF_ENV']
+    if which_environment not in ('prod', 'test'):
         print('\nPlease export environment variable CAFF_ENV as '
               'prod or test\n')
         sys.exit(0)
