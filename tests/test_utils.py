@@ -68,16 +68,6 @@ def test_set_up(mocker):
     assert args == Namespace(mg=0, mins=0, test=True)
 
 
-def test_read_config_file_real():
-    config = read_config_file('src/caffeine.ini')
-    assert 'prod' in config
-    assert 'test' in config
-    assert 'json_file' in config['prod']
-    assert 'json_file' in config['test']
-    assert 'log_file' in config['prod']
-    assert 'log_file' in config['test']
-
-
 def test_read_config_file_fake(tmpdir):
     fh = tmpdir.join("config.ini")
     fh.write('''\
