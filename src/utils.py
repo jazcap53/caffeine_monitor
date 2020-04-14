@@ -75,10 +75,10 @@ def check_cla_match_env(cur_env, ags):
 
 def init_storage(fname):
     """Create a .json file with initial values for time and level"""
+    time_now = datetime.strftime(datetime.today(), '%Y-%m-%d_%H:%M')
+    start_level = 0
     try:
         with open(fname, 'w') as outfile:
-            time_now = datetime.strftime(datetime.today(), '%Y-%m-%d_%H:%M')
-            start_level = 0
             json.dump({"time": time_now, "level": start_level}, outfile)
     except OSError as er:
         print('Unable to create .json file in `init_storage()`', er)
