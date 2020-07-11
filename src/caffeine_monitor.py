@@ -28,9 +28,10 @@ class CaffeineMonitor:
                     caffeine was consumed
         """
         self.iofile = iofile
-        self.data_dict = {}
+        self.data_dict = {}  # data to be read from and dumped to .json file
         self.mg_to_add = int(ags.mg)
         self.mins_ago = int(ags.mins)
+        self.mg_net_change = 0.0
 
     def main(self):
         """Driver"""
@@ -53,8 +54,9 @@ class CaffeineMonitor:
         self.iofile.truncate(0)
         log_mesg = (f'level is {round(self.data_dict["level"], 1)} '
                     f'at {self.data_dict["time"]}')
-        if self.mg_to_add:
-            log_mesg = f'{self.mg_to_add} mg added: ' + log_mesg
+        if self.mg_net_change:
+            log_mesg = (f'{self.mg_net_change} mg added ({self.mg_to_add} '
+                        f'mg, {self.mins_ago} mins ago): ' + log_mesg)
             logging.info(log_mesg)
         else:
             logging.debug(log_mesg)
@@ -86,8 +88,9 @@ class CaffeineMonitor:
         curr_time = datetime.today()
         old_time = curr_time - timedelta(minutes=self.mins_ago)
         minutes_elapsed = (curr_time - old_time) / timedelta(minutes=1)
-        self.mg_to_add *= pow(0.5, (minutes_elapsed / self.half_life))
-        self.mg_to_add = round(self.mg_to_add, 1)
+        self.mg_net_change = (self.mg_to_add *
+                              pow(0.5, (minutes_elapsed / self.half_life)))
+        self.mg_net_change = round(self.mg_net_change, 1)
 
     def add_caffeine(self):
         self.data_dict['level'] += self.mg_to_add

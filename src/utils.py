@@ -14,6 +14,7 @@ import logging
 
 CONFIG_FILENAME = 'src/caffeine.ini'
 
+
 def check_which_environment():
     """
     :return: the current environment ('prod' or 'test')
