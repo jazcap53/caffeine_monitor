@@ -93,6 +93,7 @@ class CaffeineMonitor:
         self.mg_net_change = round(self.mg_net_change, 1)
 
     def add_caffeine(self):
+        self.mg_net_change += self.mg_to_add
         self.data_dict['level'] += self.mg_to_add
 
     def update_time(self):
