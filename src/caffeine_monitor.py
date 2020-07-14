@@ -38,7 +38,9 @@ class CaffeineMonitor:
         self.read_file()
         self.decay_prev_level()
         if self.mins_ago:
-            self.decay_before_add()
+            self.mg_net_change = self.decay_before_add()
+        else:
+            self.mg_net_change = self.mg_to_add
         if self.mg_to_add:
             self.add_caffeine()
         self.update_time()
@@ -88,9 +90,13 @@ class CaffeineMonitor:
         curr_time = datetime.today()
         old_time = curr_time - timedelta(minutes=self.mins_ago)
         minutes_elapsed = (curr_time - old_time) / timedelta(minutes=1)
-        self.mg_net_change = (self.mg_to_add *
-                              pow(0.5, (minutes_elapsed / self.half_life)))
-        self.mg_net_change = round(self.mg_net_change, 1)
+        net_change = (self.mg_to_add *
+                      pow(0.5, (minutes_elapsed / self.half_life)))
+        return round(net_change, 1)
+
+        # self.mg_net_change = (self.mg_to_add *
+        #                       pow(0.5, (minutes_elapsed / self.half_life)))
+        # self.mg_net_change = round(self.mg_net_change, 1)
 
     def add_caffeine(self):
         # self.mg_net_change += self.mg_to_add
