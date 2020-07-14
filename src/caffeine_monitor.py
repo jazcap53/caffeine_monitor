@@ -57,7 +57,7 @@ class CaffeineMonitor:
         log_mesg = (f'level is {round(self.data_dict["level"], 1)} '
                     f'at {self.data_dict["time"]}')
         if self.mg_net_change:
-            log_mesg = (f'{self.mg_net_change} mg added ({self.mg_to_add} '
+            log_mesg = (f'{self.mg_net_change:.1f} mg added ({self.mg_to_add} '
                         f'mg, {self.mins_ago} mins ago): ' + log_mesg)
             logging.info(log_mesg)
         else:
