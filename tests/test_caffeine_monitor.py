@@ -1,10 +1,6 @@
 from argparse import Namespace
-import os
-import sys
-import json
 from datetime import datetime
 
-import pytest
 from freezegun import freeze_time
 
 from src.caffeine_monitor import CaffeineMonitor
@@ -36,11 +32,13 @@ def test_write_file_add_mg(cm, test_files, caplog):
         cm.data_dict = {'level': 140.0, 'time': cur_time}
         caplog.set_level('INFO')
 
+        cm.mins_ago = 0
         cm.mg_to_add = 140
+        cm.mg_net_change = 140.0
 
         cm.write_file()
 
-        assert f'140 mg added: level is 140.0 at {cur_time}' in caplog.text
+        assert f'140.0 mg added (140 mg, 0 mins ago): level is 140.0 at {cur_time}' in caplog.text
         assert len(caplog.records) == 1
 
 
@@ -74,8 +72,8 @@ def test_decay_before_add_360_mins_elapsed(cm):
     assert cm.data_dict['time'] == datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')
     cm.mg_to_add = 200
     cm.mins_ago = 360
-    cm.decay_before_add()
-    assert cm.mg_to_add == 100
+    cm.mg_net_change = cm.decay_before_add()
+    assert cm.mg_net_change == 100
 
 
 def test_decay_before_add_0_mins_elapsed(cm):
