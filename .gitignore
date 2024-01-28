@@ -9,3 +9,4 @@ __pycache__
 caff
 *.log*
 *_backup/
+sandbox/
