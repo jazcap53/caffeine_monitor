@@ -19,12 +19,12 @@ def check_which_environment():
     """
     :return: the current environment ('prod' or 'test')
     """
-    which_environment = os.environ['CAFF_ENV']
-    if which_environment not in ('prod', 'test'):
+    which_env = os.environ.get('CAFF_ENV')
+    if which_env is None or which_env not in ('prod', 'test'):
         print('\nPlease export environment variable CAFF_ENV as '
               'prod or test\n')
         sys.exit(0)
-    return which_environment
+    return which_env
 
 
 def parse_args(args):
