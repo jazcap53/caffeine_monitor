@@ -44,6 +44,13 @@ def parse_args(args):
                         help='minutes ago caffeine was added '
                              '(may be negative, 0, or '
                              'omitted)')
+    parser.add_argument('-b', '--bev', 
+                        required=False, 
+                        choices=['coffee', 'soda'], 
+                        type=str,
+                        default='coffee', 
+                        help="beverage: 'coffee' (default)"
+                        " or soda so far")
     return parser.parse_args(args)
 
 

@@ -39,8 +39,6 @@ class CaffeineMonitor:
 
     def main(self):
         """Driver"""
-        print(self.iofile)
-        print(self.iofile.closed)
         self.read_file()
         self.decay_prev_level()
         if self.mins_ago:
