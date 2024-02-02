@@ -36,6 +36,8 @@ class CaffeineMonitor:
         self.mg_to_add = int(ags.mg)
         self.mins_ago = int(ags.mins)
         self.mg_net_change = 0.0
+        self.beverage = ags.bev
+        self.future_list = []
 
     def main(self):
         """Driver"""
