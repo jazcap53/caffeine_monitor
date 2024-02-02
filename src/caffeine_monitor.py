@@ -19,15 +19,19 @@ from src.utils import set_up
 class CaffeineMonitor:
     half_life = 360  # in minutes
 
-    def __init__(self, iofile, ags):
+    def __init__(self, iofile, iofile_future, ags):
         """
         :param iofile: a .json file handle, open for r+, to store and
                read a time and caffeine level
+        :param iofile_future: a .json file handle, open for r+, to 
+               store and read future time and level changes.
+               May be empty.
         :param ags: an argparse.Namespace object with .mg as the amount
                     of caffeine consumed and .mins as how long ago the
                     caffeine was consumed
         """
         self.iofile = iofile
+        self.iofile_future = iofile_future
         self.data_dict = {}  # data to be read from and dumped to .json file
         self.mg_to_add = int(ags.mg)
         self.mins_ago = int(ags.mins)
@@ -35,6 +39,8 @@ class CaffeineMonitor:
 
     def main(self):
         """Driver"""
+        print(self.iofile)
+        print(self.iofile.closed)
         self.read_file()
         self.decay_prev_level()
         if self.mins_ago:
@@ -115,7 +121,7 @@ class CaffeineMonitor:
 
 
 if __name__ == '__main__':
-    json_filename, args = set_up()
+    json_filename, json_filename_future, args = set_up()
 
     try:
         file = open(json_filename, 'r+')
@@ -124,5 +130,11 @@ if __name__ == '__main__':
         raise
     else:
         with file:
-            monitor = CaffeineMonitor(file, args)
-            monitor.main()
+            try:
+                file_future = open(json_filename_future, 'r+')
+            except OSError as e:
+                print('Unable to open future .json file', e)
+                raise    
+            else:         
+                monitor = CaffeineMonitor(file, file_future, args)
+                monitor.main()

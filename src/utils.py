@@ -86,6 +86,17 @@ def init_storage(fname):
         raise
 
 
+def init_future(fname):
+    """Create an empty .json file"""
+    try:
+        with open(fname, 'w') as outfile_future:
+            pass 
+    except OSError as er:
+        print('Unable to create empty future .json file in `init_future()`',
+              er)
+        raise
+
+
 def delete_old_logfile(fname):
     try:
         os.remove(fname)
@@ -105,9 +116,13 @@ def set_up():
                         format='%(message)s')
 
     json_filename = config[current_environment]['json_file']
+    json_filename_future = config[current_environment]['json_file_future']
     log_filename = config[current_environment]['log_file']
     my_file = Path(json_filename)
+    my_file_future = Path(json_filename_future)
     if not my_file.is_file():
         init_storage(json_filename)
         delete_old_logfile(log_filename)  # if it exists
-    return json_filename, args
+    if not my_file_future.is_file():
+        init_future(json_filename_future)
+    return json_filename, json_filename_future, args
