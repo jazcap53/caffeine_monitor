@@ -41,7 +41,7 @@ class CaffeineMonitor:
 
     def main(self):
         """Driver"""
-        self.read_file()
+        self.read_file()  # sets self.data_dict
         self.decay_prev_level()
         if self.mins_ago:
             self.mg_net_change = self.decay_before_add()
@@ -100,13 +100,7 @@ class CaffeineMonitor:
                       pow(0.5, (minutes_elapsed / self.half_life)))
         return round(net_change, 1)
 
-        # self.mg_net_change = (self.mg_to_add *
-        #                       pow(0.5, (minutes_elapsed / self.half_life)))
-        # self.mg_net_change = round(self.mg_net_change, 1)
-
     def add_caffeine(self):
-        # self.mg_net_change += self.mg_to_add
-        # self.data_dict['level'] += self.mg_to_add
         if not self.mins_ago:
             self.mg_net_change = self.mg_to_add
         self.data_dict['level'] += self.mg_net_change  # if self.mins_ago else self.mg_to_add
