@@ -7,7 +7,7 @@ import os
 import sys
 import argparse
 import configparser
-from datetime import datetime
+from datetime import datetime, MAXYEAR
 import json
 from pathlib import Path
 import logging
@@ -38,8 +38,7 @@ def parse_args(args):
     parser.add_argument('-t', '--test', action='store_true',
                         help='Use test environment')
     parser.add_argument('mg', nargs='?', type=int, default=0,
-                        help='mg of caffeine to add (may be negative, 0, or '
-                             'omitted)')
+                        help='amount of caffeine added (may be 0)')
     parser.add_argument('mins', nargs='?', type=int, default=0,
                         help='minutes ago caffeine was added '
                              '(may be negative, 0, or '
@@ -97,9 +96,9 @@ def init_future(fname):
     """Create an empty .json file"""
     try:
         with open(fname, 'w') as outfile_future:
-            pass 
+             json.dump([{"at_time": datetime.strftime(datetime(MAXYEAR, 12, 31), '%Y-%m-%d_%H:%M'), "at_level": 0}], outfile_future)
     except OSError as er:
-        print('Unable to create empty future .json file in `init_future()`',
+        print('Unable to create dummy future .json file in `init_future()`',
               er)
         raise
 
@@ -127,9 +126,9 @@ def set_up():
     log_filename = config[current_environment]['log_file']
     my_file = Path(json_filename)
     my_file_future = Path(json_filename_future)
-    if not my_file.is_file():
+    if not my_file.is_file() or os.path.getsize(my_file_future) == 0:
         init_storage(json_filename)
         delete_old_logfile(log_filename)  # if it exists
-    if not my_file_future.is_file():
+    if not my_file_future.is_file() or os.path.getsize(my_file_future) == 0:
         init_future(json_filename_future)
     return json_filename, json_filename_future, args

@@ -42,6 +42,7 @@ class CaffeineMonitor:
     def main(self):
         """Driver"""
         self.read_file()  # sets self.data_dict
+        self.read_future_file()  # sets self.future_list
         self.decay_prev_level()
         if self.mins_ago:
             self.mg_net_change = self.decay_before_add()
@@ -57,6 +58,10 @@ class CaffeineMonitor:
         """Read initial time and caffeine level from file"""
         self.data_dict = json.load(self.iofile)
 
+    def read_future_file(self):
+        """Read future changes from file"""
+        self.data_list = json.load(self.iofile_future)
+    
     def write_file(self):
         self.iofile.seek(0)
         self.iofile.truncate(0)
@@ -69,6 +74,10 @@ class CaffeineMonitor:
         else:
             logging.debug(log_mesg)
         json.dump(self.data_dict, self.iofile)
+
+    def write_future_file(self):
+        self.data_list.sort(key=lambda x: x['time'])
+        json.dump(self.future_list, self.iofile_future)
 
     def decay_prev_level(self):
         """
