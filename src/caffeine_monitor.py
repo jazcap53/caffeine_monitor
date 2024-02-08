@@ -49,7 +49,7 @@ class CaffeineMonitor:
         else:
             self.mg_net_change = self.mg_to_add
         if self.mg_to_add:
-            self.add_caffeine()
+            self.add_caffeine()  # change to self.add_coffee() or self.add_soda()
         self.update_time()
         self.write_file()
         print(self)
@@ -57,6 +57,8 @@ class CaffeineMonitor:
     def read_file(self):
         """Read initial time and caffeine level from file"""
         self.data_dict = json.load(self.iofile)
+        print(f'type self.data_dict["time"] is {type(self.data_dict["time"])}')
+        print(f'type self.data_dict["level"] is {type(self.data_dict["level"])}')
 
     def read_future_file(self):
         """Read future changes from file"""
@@ -99,7 +101,7 @@ class CaffeineMonitor:
         Decay caffeine consumed some time ago (or in the future)
         before it gets added to current level.
 
-        :return: None
+        :return: net change rounded to 1 digit past decimal point
         Called by: main()
         """
         curr_time = datetime.today()
@@ -110,9 +112,15 @@ class CaffeineMonitor:
         return round(net_change, 1)
 
     def add_caffeine(self):
-        if not self.mins_ago:
-            self.mg_net_change = self.mg_to_add
+        # if not self.mins_ago:
+        #     self.mg_net_change = self.mg_to_add  # TODO: is this already done in main() ?
         self.data_dict['level'] += self.mg_net_change  # if self.mins_ago else self.mg_to_add
+
+    def add_coffee(self):
+        pass  # drink 1/4 of qty at self.mins_ago, then 1/4 of qty every 15 min
+
+    def add_soda(self):
+        pass  # drink 65% at self.mins_ago, 25% after 20 min, 10% after 20 min
 
     def update_time(self):
         self.data_dict['time'] = datetime.strftime(datetime.today(),
