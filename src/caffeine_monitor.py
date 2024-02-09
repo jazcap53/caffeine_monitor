@@ -45,7 +45,7 @@ class CaffeineMonitor:
         self.read_future_file()  # sets self.future_list
         self.decay_prev_level()
         # TODO HERE: call self.add_coffee() or self.add_soda() to update self.future_list
-        #            sort self.future_list  (again???)
+        #            sort self.future_list
         #            for each item in self.future_list:
         #                get/set appropriate self.mins_ago
         #                get/set appropriate self.mg_net_change
@@ -54,7 +54,7 @@ class CaffeineMonitor:
         #                elif self.mins_ago = 0:
         #                    pass
         #                else:
-        #                    add item to self.new_data_list
+        #                    add item to self.new_future_list
         #                    continue
         #                call self.add_caffeine()
         if self.mins_ago:
@@ -91,8 +91,8 @@ class CaffeineMonitor:
         json.dump(self.data_dict, self.iofile)
 
     def write_future_file(self):
-        self.future_list.sort(key=lambda x: x['time'])
-        json.dump(self.future_list, self.iofile_future, indent=4)
+        self.new_future_list.sort(key=lambda x: x['time'])
+        json.dump(self.new_future_list, self.iofile_future, indent=4)
 
     def decay_prev_level(self):
         """
