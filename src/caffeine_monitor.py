@@ -42,8 +42,21 @@ class CaffeineMonitor:
     def main(self):
         """Driver"""
         self.read_file()  # sets self.data_dict
-        self.read_future_file()  # sets self.future_list
+        self.read_future_file()  # sets self.data_list
         self.decay_prev_level()
+        # TODO HERE: call self.add_coffee() or self.add_soda() to update self.data_list
+        #            sort self.data_list  (again???)
+        #            for each item in self.data_list:
+        #                get/set appropriate self.mins_ago
+        #                get/set appropriate self.mg_net_change
+        #                if self.mins_ago > 0:
+        #                    call self.decay_before_add()
+        #                elif self.mins_ago = 0:
+        #                    pass
+        #                else:
+        #                    add item to self.new_data_list
+        #                    continue
+        #                call self.add_caffeine()
         if self.mins_ago:
             self.mg_net_change = self.decay_before_add()
         else:
@@ -127,6 +140,9 @@ class CaffeineMonitor:
         pass  # drink 65% at self.mins_ago, 25% after 20 min, 10% after 20 min
 
     def update_time(self):
+        """
+        Called by: main()
+        """
         self.data_dict['time'] = datetime.strftime(datetime.today(),
                                                    '%Y-%m-%d_%H:%M')
 
