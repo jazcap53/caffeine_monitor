@@ -79,7 +79,7 @@ class CaffeineMonitor:
 
     def write_future_file(self):
         self.data_list.sort(key=lambda x: x['time'])
-        json.dump(self.future_list, self.iofile_future)
+        json.dump(self.future_list, self.iofile_future, indent=4)
 
     def decay_prev_level(self):
         """
@@ -112,9 +112,7 @@ class CaffeineMonitor:
         return round(net_change, 1)
 
     def add_caffeine(self):
-        # if not self.mins_ago:
-        #     self.mg_net_change = self.mg_to_add  # TODO: is this already done in main() ?
-        self.data_dict['level'] += self.mg_net_change  # if self.mins_ago else self.mg_to_add
+        self.data_dict['level'] += self.mg_net_change
 
     def add_coffee(self):
         pass  # drink 1/4 of qty at self.mins_ago, then 1/4 of qty every 15 min
