@@ -109,15 +109,21 @@ class CaffeineMonitor:
         minutes_elapsed = (curr_time - old_time) / timedelta(minutes=1)
         net_change = (self.mg_to_add *
                       pow(0.5, (minutes_elapsed / self.half_life)))
-        return round(net_change, 1)
+        return round(net_change, 1)  # sets self.mg_net_change
 
     def add_caffeine(self):
         self.data_dict['level'] += self.mg_net_change
 
     def add_coffee(self):
+        """
+        Called by: main()
+        """
         pass  # drink 1/4 of qty at self.mins_ago, then 1/4 of qty every 15 min
 
     def add_soda(self):
+        """
+        Called by: main()
+        """
         pass  # drink 65% at self.mins_ago, 25% after 20 min, 10% after 20 min
 
     def update_time(self):
