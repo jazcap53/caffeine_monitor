@@ -43,7 +43,7 @@ class CaffeineMonitor:
         self.read_file()  # sets self.data_dict
         self.read_future_file()  # sets self.future_list
         self.decay_prev_level()
-        # TODO HERE: call self.add_coffee() or self.add_soda() to update self.future_list
+        # TODO HERE: call self.add_coffee() or self.add_soda()
         #            sort self.future_list on item 'time' attribute, reverse=True
         #            while self.future_list
         #                item = self.future_list.pop()
@@ -91,7 +91,7 @@ class CaffeineMonitor:
         json.dump(self.data_dict, self.iofile)
 
     def write_future_file(self):
-        self.new_future_list.sort(key=lambda x: x['time'])
+        self.new_future_list.sort(key=lambda x: x['time'], reverse=True)
         json.dump(self.new_future_list, self.iofile_future, indent=4)
 
     def decay_prev_level(self):
@@ -125,6 +125,9 @@ class CaffeineMonitor:
         self.mg_net_change = round(net_change, 1)
 
     def add_caffeine(self):
+        """
+        Called by: self.add_coffee()
+        """
         self.data_dict['level'] += self.mg_net_change
 
     def add_coffee(self):
@@ -137,8 +140,8 @@ class CaffeineMonitor:
         for i in range(4):
             if self.mins_ago < 0:
                 time = datetime.strptime(self.data_dict['time'], '%Y-%m-%d_%H:%M') + timedelta(minutes=self.mins_ago)
-                self.future_list.append({"time": time.strftime('%Y-%m-%d_%H:%M'), 
-                                         "level": quarter})
+                self.new_future_list.append({"time": time.strftime('%Y-%m-%d_%H:%M'), 
+                                         "level": self.mg_net_change})
             elif self.mins_ago == 0:
                 self.add_caffeine()
             else:
@@ -152,6 +155,23 @@ class CaffeineMonitor:
         Called by: main()
         """
         pass  # drink 65% at self.mins_ago, 25% after 20 min, 10% after 20 min
+
+    def process_future_list(self):
+        """
+        Process each item from self.future_list
+
+        Called by: main()
+        """
+        pass
+
+    def process_item(self):
+        """
+        Process one caffeine item
+
+        Called by: self.add_coffee(), self.add_soda(),
+                   self.process_future_list()
+        """
+        pass
 
     def update_time(self):
         """
