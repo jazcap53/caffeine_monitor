@@ -1,7 +1,6 @@
 #!/usr/bin/env python3.9
 
 # file: caffeine_monitor.py
-# andrew jarcho
 # 2019-10-08
 
 
@@ -45,20 +44,21 @@ class CaffeineMonitor:
         self.read_future_file()  # sets self.future_list
         self.decay_prev_level()
         # TODO HERE: call self.add_coffee() or self.add_soda() to update self.future_list
-        #            sort self.future_list
-        #            for each item in self.future_list:
-        #                get/set appropriate self.mins_ago
-        #                get/set appropriate self.mg_net_change
-        #                if self.mins_ago > 0:
-        #                    call self.decay_before_add()
-        #                elif self.mins_ago = 0:
-        #                    pass
-        #                else:
-        #                    add item to self.new_future_list
-        #                    continue
-        #                call self.add_caffeine()
+        #            sort self.future_list on item 'time' attribute, reverse=True
+        #            while self.future_list
+        #                item = self.future_list.pop()
+        #                    get/set appropriate self.mins_ago
+        #                    get/set appropriate self.mg_net_change
+        #                    if self.mins_ago > 0:
+        #                        call self.decay_before_add()
+        #                    elif self.mins_ago = 0:
+        #                        pass
+        #                    else:
+        #                        add item to self.new_future_list
+        #                        continue
+        #                    call self.add_caffeine()
         if self.mins_ago:
-            self.mg_net_change = self.decay_before_add()
+            self.decay_before_add()
         else:
             self.mg_net_change = self.mg_to_add
         if self.mg_to_add:
@@ -122,17 +122,32 @@ class CaffeineMonitor:
         minutes_elapsed = (curr_time - old_time) / timedelta(minutes=1)
         net_change = (self.mg_to_add *
                       pow(0.5, (minutes_elapsed / self.half_life)))
-        return round(net_change, 1)  # sets self.mg_net_change
+        self.mg_net_change = round(net_change, 1)
 
     def add_caffeine(self):
         self.data_dict['level'] += self.mg_net_change
 
-    def add_coffee(self):
-        """
-        Called by: main()
-        """
-        pass  # drink 1/4 of qty at self.mins_ago, then 1/4 of qty every 15 min
-
+```python
+def add_coffee(self):
+    """
+    Called by: main()
+    """
+    quarter = self.mg_to_add / 4
+    self.mg_net_change = quarter
+    
+    for i in range(4):
+        if self.mins_ago < 0:
+            time = datetime.strptime(self.data_dict['time'], '%Y-%m-%d_%H:%M') + timedelta(minutes=self.mins_ago)
+            self.future_list.append({"time": time.strftime('%Y-%m-%d_%H:%M'), 
+                                     "level": quarter})
+        elif self.mins_ago == 0:
+            self.add_caffeine()
+        else:
+            self.decay_before_add()
+            self.add_caffeine()
+            
+        self.mins_ago -= 15 
+```
     def add_soda(self):
         """
         Called by: main()
