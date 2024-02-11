@@ -127,27 +127,26 @@ class CaffeineMonitor:
     def add_caffeine(self):
         self.data_dict['level'] += self.mg_net_change
 
-```python
-def add_coffee(self):
-    """
-    Called by: main()
-    """
-    quarter = self.mg_to_add / 4
-    self.mg_net_change = quarter
-    
-    for i in range(4):
-        if self.mins_ago < 0:
-            time = datetime.strptime(self.data_dict['time'], '%Y-%m-%d_%H:%M') + timedelta(minutes=self.mins_ago)
-            self.future_list.append({"time": time.strftime('%Y-%m-%d_%H:%M'), 
-                                     "level": quarter})
-        elif self.mins_ago == 0:
-            self.add_caffeine()
-        else:
-            self.decay_before_add()
-            self.add_caffeine()
-            
-        self.mins_ago -= 15 
-```
+    def add_coffee(self):
+        """
+        Called by: main()
+        """
+        quarter = self.mg_to_add / 4
+        self.mg_net_change = quarter
+        
+        for i in range(4):
+            if self.mins_ago < 0:
+                time = datetime.strptime(self.data_dict['time'], '%Y-%m-%d_%H:%M') + timedelta(minutes=self.mins_ago)
+                self.future_list.append({"time": time.strftime('%Y-%m-%d_%H:%M'), 
+                                         "level": quarter})
+            elif self.mins_ago == 0:
+                self.add_caffeine()
+            else:
+                self.decay_before_add()
+                self.add_caffeine()
+                
+            self.mins_ago -= 15 
+
     def add_soda(self):
         """
         Called by: main()
