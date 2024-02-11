@@ -50,7 +50,13 @@ def parse_args(args):
                         default='coffee', 
                         help="beverage: 'coffee' (default)"
                         " or soda so far")
-    return parser.parse_args(args)
+    # return parser.parse_args(args)
+    args = parser.parse_args(args)
+    if args.mins < 0:
+        print("minutes ago argument (mins) may not be < 0")
+        sys.exit(1)
+
+    return args
 
 
 def read_config_file(config_file):
@@ -96,7 +102,7 @@ def init_future(fname):
     """Create an empty .json file"""
     try:
         with open(fname, 'w') as outfile_future:
-             json.dump([{"at_time": datetime.strftime(datetime(MAXYEAR, 12, 31), '%Y-%m-%d_%H:%M'), "at_level": 0}], outfile_future)
+             json.dump([{"time": datetime.strftime(datetime(MAXYEAR, 12, 31), '%Y-%m-%d_%H:%M'), "level": 0}], outfile_future)
     except OSError as er:
         print('Unable to create dummy future .json file in `init_future()`',
               er)
@@ -119,14 +125,14 @@ def set_up():
     check_cla_match_env(current_environment, args)
     logging.basicConfig(filename=config[current_environment]['log_file'],
                         level=logging.INFO,
-                        format='%(message)s')
+                        format='%(levelname)s: %(message)s')
 
     json_filename = config[current_environment]['json_file']
     json_filename_future = config[current_environment]['json_file_future']
     log_filename = config[current_environment]['log_file']
     my_file = Path(json_filename)
     my_file_future = Path(json_filename_future)
-    if not my_file.is_file() or os.path.getsize(my_file_future) == 0:
+    if not my_file.is_file() or os.path.getsize(my_file) == 0:
         init_storage(json_filename)
         delete_old_logfile(log_filename)  # if it exists
     if not my_file_future.is_file() or os.path.getsize(my_file_future) == 0:

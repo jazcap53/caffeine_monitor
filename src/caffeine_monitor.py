@@ -37,41 +37,33 @@ class CaffeineMonitor:
         self.mg_net_change = 0.0
         self.beverage = ags.bev
         self.future_list = []
+        self.new_future_list = []
 
     def main(self):
         """Driver"""
         self.read_file()  # sets self.data_dict
         self.read_future_file()  # sets self.future_list
         self.decay_prev_level()
-        # TODO HERE: call self.add_coffee() or self.add_soda()
-        #            sort self.future_list on item 'time' attribute, reverse=True
-        #            while self.future_list
-        #                item = self.future_list.pop()
-        #                    get/set appropriate self.mins_ago
-        #                    get/set appropriate self.mg_net_change
-        #                    if self.mins_ago > 0:
-        #                        call self.decay_before_add()
-        #                    elif self.mins_ago = 0:
-        #                        pass
-        #                    else:
-        #                        add item to self.new_future_list
-        #                        continue
-        #                    call self.add_caffeine()
-        if self.mins_ago:
-            self.decay_before_add()
+
+        if self.beverage == "coffee":
+            self.add_coffee()
+        elif self.beverage == "soda":
+            self.add_soda()
         else:
-            self.mg_net_change = self.mg_to_add
-        if self.mg_to_add:
-            self.add_caffeine()  # change to self.add_coffee() or self.add_soda()
+            pass
+
+        self.process_future_list()
+
         self.update_time()
+
+        self.write_future_file()
+
         self.write_file()
         print(self)
 
     def read_file(self):
         """Read initial time and caffeine level from file"""
         self.data_dict = json.load(self.iofile)
-        print(f'type self.data_dict["time"] is {type(self.data_dict["time"])}')
-        print(f'type self.data_dict["level"] is {type(self.data_dict["level"])}')
 
     def read_future_file(self):
         """Read future changes from file"""
@@ -91,6 +83,8 @@ class CaffeineMonitor:
         json.dump(self.data_dict, self.iofile)
 
     def write_future_file(self):
+        self.iofile_future.seek(0)
+        self.iofile_future.truncate()
         self.new_future_list.sort(key=lambda x: x['time'], reverse=True)
         json.dump(self.new_future_list, self.iofile_future, indent=4)
 
@@ -133,22 +127,13 @@ class CaffeineMonitor:
     def add_coffee(self):
         """
         Called by: main()
-        """
+        """ 
         quarter = self.mg_to_add / 4
         self.mg_net_change = quarter
-        
+
         for i in range(4):
-            if self.mins_ago < 0:
-                time = datetime.strptime(self.data_dict['time'], '%Y-%m-%d_%H:%M') + timedelta(minutes=self.mins_ago)
-                self.new_future_list.append({"time": time.strftime('%Y-%m-%d_%H:%M'), 
-                                         "level": self.mg_net_change})
-            elif self.mins_ago == 0:
-                self.add_caffeine()
-            else:
-                self.decay_before_add()
-                self.add_caffeine()
-                
-            self.mins_ago -= 15 
+            self.process_item()
+            self.mins_ago -= 15
 
     def add_soda(self):
         """
@@ -162,16 +147,36 @@ class CaffeineMonitor:
 
         Called by: main()
         """
-        pass
+        self.future_list.sort(key=lambda x: x['time'], reverse=True)
+        while self.future_list:
+            item = self.future_list.pop()
+            curr_time = datetime.today()
+            item_time = datetime.strptime(item['time'], '%Y-%m-%d_%H:%M')
+            self.mins_ago = (curr_time - item_time) / timedelta(minutes=1)
+            self.mg_net_change = item['level']
+            self.process_item()
 
     def process_item(self):
         """
         Process one caffeine item
 
-        Called by: self.add_coffee(), self.add_soda(),
+        Called by: self.add_coffee(), self.add_soda(), 
                    self.process_future_list()
         """
-        pass
+        if self.mg_net_change == 0:
+            return
+
+        if self.mins_ago < 0:  # item is still in the future
+            time = datetime.strptime(self.data_dict['time'], '%Y-%m-%d_%H:%M') + timedelta(minutes=-self.mins_ago)
+            self.new_future_list.append({"time": time.strftime('%Y-%m-%d_%H:%M'),  
+                                         "level": self.mg_net_change})
+        elif self.mins_ago == 0:
+       
+
+            self.add_caffeine()
+        else:
+            self.decay_before_add()
+            self.add_caffeine()
 
     def update_time(self):
         """
@@ -179,7 +184,6 @@ class CaffeineMonitor:
         """
         self.data_dict['time'] = datetime.strftime(datetime.today(),
                                                    '%Y-%m-%d_%H:%M')
-
     def __str__(self):
         return (f'Caffeine level is {round(self.data_dict["level"], 1)} '
                 f'mg at time {self.data_dict["time"]}')
@@ -187,6 +191,8 @@ class CaffeineMonitor:
 
 if __name__ == '__main__':
     json_filename, json_filename_future, args = set_up()
+
+    print(f'json_filename is {json_filename}; json_filename_future is {json_filename_future}')
 
     try:
         file = open(json_filename, 'r+')
