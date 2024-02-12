@@ -108,7 +108,6 @@ def init_future(fname):
               er)
         raise
 
-
 def delete_old_logfile(fname):
     try:
         os.remove(fname)
@@ -116,6 +115,16 @@ def delete_old_logfile(fname):
     except OSError:
         return False  # ditto
 
+def init_logfile(fname):
+    """
+    Called by: set_up()
+    """
+    try:
+        with open(fname, 'w') as logfile:
+            logfile.close()
+    except OSError as er:
+        print('Unable to create log file in `init_logfile()`', er)
+        raise
 
 def set_up():
     current_environment = check_which_environment()
@@ -135,6 +144,7 @@ def set_up():
     if not my_file.is_file() or os.path.getsize(my_file) == 0:
         init_storage(json_filename)
         delete_old_logfile(log_filename)  # if it exists
+        init_logfile(log_filename)
     if not my_file_future.is_file() or os.path.getsize(my_file_future) == 0:
         init_future(json_filename_future)
     return json_filename, json_filename_future, args

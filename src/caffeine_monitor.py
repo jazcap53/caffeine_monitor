@@ -72,6 +72,18 @@ class CaffeineMonitor:
     def write_file(self):
         self.iofile.seek(0)
         self.iofile.truncate(0)
+        json.dump(self.data_dict, self.iofile)
+
+    def write_future_file(self):
+        self.iofile_future.seek(0)
+        self.iofile_future.truncate()
+        self.new_future_list.sort(key=lambda x: x['time'], reverse=True)
+        json.dump(self.new_future_list, self.iofile_future, indent=4)
+
+    def write_log(self):
+        """
+        Called by: self.add_caffeine()
+        """
         log_mesg = (f'level is {round(self.data_dict["level"], 1)} '
                     f'at {self.data_dict["time"]}')
         if self.mg_net_change:
@@ -80,13 +92,6 @@ class CaffeineMonitor:
             logging.info(log_mesg)
         else:
             logging.debug(log_mesg)
-        json.dump(self.data_dict, self.iofile)
-
-    def write_future_file(self):
-        self.iofile_future.seek(0)
-        self.iofile_future.truncate()
-        self.new_future_list.sort(key=lambda x: x['time'], reverse=True)
-        json.dump(self.new_future_list, self.iofile_future, indent=4)
 
     def decay_prev_level(self):
         """
@@ -123,6 +128,7 @@ class CaffeineMonitor:
         Called by: self.add_coffee()
         """
         self.data_dict['level'] += self.mg_net_change
+        self.write_log()        
 
     def add_coffee(self):
         """
@@ -171,8 +177,6 @@ class CaffeineMonitor:
             self.new_future_list.append({"time": time.strftime('%Y-%m-%d_%H:%M'),  
                                          "level": self.mg_net_change})
         elif self.mins_ago == 0:
-       
-
             self.add_caffeine()
         else:
             self.decay_before_add()
