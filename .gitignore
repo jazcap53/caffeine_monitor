@@ -11,4 +11,3 @@ caff
 *.log*
 *_backup/
 sandbox/
-pytesting/
