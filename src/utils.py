@@ -106,13 +106,14 @@ def init_future(fname):
               er)
         raise
 
+
 def delete_old_logfile(fname):
     try:
         os.remove(fname)
         return True  # return value only used by testing code at present
     except OSError:
-        print('UNABLE TO REMOVE OLD LOG FILE')
         return False  # ditto
+
 
 def init_logfile(fname):
     """
@@ -120,14 +121,11 @@ def init_logfile(fname):
     """
     try:
         with open(fname, 'a+') as logfile:
-            # json.dump({'time': datetime.strftime(datetime(MAXYEAR, 12, 31), '%Y-%m-%d_%H:%M'),
-            #                'level': 0}, logfile)
-            # print('Dummy value', file=logfile)
-            # logfile.seek(0, io.SEEK_END)
             print("Start of log file", file=logfile)
     except OSError as er:
         print('Unable to create log file in `init_logfile()`', er)
         raise
+
 
 def set_up():
     current_environment = check_which_environment()
@@ -135,10 +133,6 @@ def set_up():
     config = read_config_file(CONFIG_FILENAME)
 
     check_cla_match_env(current_environment, args)
-    # logging.basicConfig(filename=config[current_environment]['log_file'],
-    #                     level=logging.INFO,
-    #                     format='%(levelname)s: %(message)s')
-
     json_filename = config[current_environment]['json_file']
     json_filename_future = config[current_environment]['json_file_future']
     log_filename = config[current_environment]['log_file']
@@ -151,8 +145,6 @@ def set_up():
         init_logfile(log_filename)
     if not my_file_future.is_file() or os.path.getsize(my_file_future) == 0:
         init_future(json_filename_future)
-        # delete_old_logfile(log_filename)  # if it exists
-        # init_logfile(log_filename)
     logging.basicConfig(filename=config[current_environment]['log_file'],
                         level=logging.INFO,
                         format='%(levelname)s: %(message)s')

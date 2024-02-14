@@ -8,8 +8,6 @@
 Give a rough estimate of the quantity of caffeine
 in the user's body, in mg
 """
-import io
-import os
 from datetime import datetime, timedelta
 import json
 import logging
@@ -22,16 +20,12 @@ class CaffeineMonitor:
 
     def __init__(self, logfile, iofile, iofile_future, ags):
         """
-        :param logfile: a text .log file handle, open for r+, to
-               delete a dummy log entry if present, then write to log
-        :param iofile: a .json file handle, open for r+, to store and
-               read a time and caffeine level
-        :param iofile_future: a .json file handle, open for r+, to 
-               store and read future time and level changes.
-               May be empty.
+        :param logfile: a Path object
+        :param iofile: a Path object
+        :param iofile_future: a Path object
         :param ags: an argparse.Namespace object with .mg as the amount
-                    of caffeine consumed and .mins as how long ago the
-                    caffeine was consumed
+                    of caffeine consumed, .mins as how long ago the
+                    caffeine was consumed, and .bev as the beverage
         """
         self.logfile = logfile
         self.iofile = iofile
@@ -70,12 +64,6 @@ class CaffeineMonitor:
 
     def read_log(self):
         pass
-        # first_log_line = self.logfile.readline()
-        # if first_log_line.startswith('Dummy'):
-        #     self.logfile.seek(0)
-        #     self.logfile.truncate()
-        # else:
-        #     self.logfile.seek(0, io.SEEK_END)
 
     def read_file(self):
         """Read initial time and caffeine level from file"""
@@ -102,9 +90,6 @@ class CaffeineMonitor:
         """
         Called by: self.add_caffeine()
         """
-        # print(oct(os.stat(log_filename).st_mode))
-        # print("In CaffeineMonitor.write_log()")
-        # print("Log this!", file=self.logfile)
         log_mesg = (f'level is {round(self.data_dict["level"], 1)} '
                     f'at {self.data_dict["time"]}')
         if self.mg_net_change:
@@ -209,6 +194,7 @@ class CaffeineMonitor:
         """
         self.data_dict['time'] = datetime.strftime(datetime.today(),
                                                    '%Y-%m-%d_%H:%M')
+
     def __str__(self):
         return (f'Caffeine level is {round(self.data_dict["level"], 1)} '
                 f'mg at time {self.data_dict["time"]}')
@@ -216,8 +202,6 @@ class CaffeineMonitor:
 
 if __name__ == '__main__':
     log_filename, json_filename, json_filename_future, args = set_up()
-
-    print(f'log_filename is {log_filename}, json_filename is {json_filename}; json_filename_future is {json_filename_future}')
 
     try:
         logfile = open(log_filename, 'r+')
