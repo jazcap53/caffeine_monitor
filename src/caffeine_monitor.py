@@ -8,6 +8,8 @@
 Give a rough estimate of the quantity of caffeine
 in the user's body, in mg
 """
+import io
+import os
 from datetime import datetime, timedelta
 import json
 import logging
@@ -18,8 +20,10 @@ from src.utils import set_up
 class CaffeineMonitor:
     half_life = 360  # in minutes
 
-    def __init__(self, iofile, iofile_future, ags):
+    def __init__(self, logfile, iofile, iofile_future, ags):
         """
+        :param logfile: a text .log file handle, open for r+, to
+               delete a dummy log entry if present, then write to log
         :param iofile: a .json file handle, open for r+, to store and
                read a time and caffeine level
         :param iofile_future: a .json file handle, open for r+, to 
@@ -29,6 +33,7 @@ class CaffeineMonitor:
                     of caffeine consumed and .mins as how long ago the
                     caffeine was consumed
         """
+        self.logfile = logfile
         self.iofile = iofile
         self.iofile_future = iofile_future
         self.data_dict = {}  # data to be read from and dumped to .json file
@@ -38,9 +43,11 @@ class CaffeineMonitor:
         self.beverage = ags.bev
         self.future_list = []
         self.new_future_list = []
+        self.log_line_one = ''
 
     def main(self):
         """Driver"""
+        self.read_log()
         self.read_file()  # sets self.data_dict
         self.read_future_file()  # sets self.future_list
         self.decay_prev_level()
@@ -61,9 +68,20 @@ class CaffeineMonitor:
         self.write_file()
         print(self)
 
+    def read_log(self):
+        pass
+        # first_log_line = self.logfile.readline()
+        # if first_log_line.startswith('Dummy'):
+        #     self.logfile.seek(0)
+        #     self.logfile.truncate()
+        # else:
+        #     self.logfile.seek(0, io.SEEK_END)
+
     def read_file(self):
         """Read initial time and caffeine level from file"""
         self.data_dict = json.load(self.iofile)
+        if not self.data_dict:
+            self.data_dict = {'time': datetime.now(), 'level': 0.0} 
 
     def read_future_file(self):
         """Read future changes from file"""
@@ -84,6 +102,9 @@ class CaffeineMonitor:
         """
         Called by: self.add_caffeine()
         """
+        # print(oct(os.stat(log_filename).st_mode))
+        # print("In CaffeineMonitor.write_log()")
+        # print("Log this!", file=self.logfile)
         log_mesg = (f'level is {round(self.data_dict["level"], 1)} '
                     f'at {self.data_dict["time"]}')
         if self.mg_net_change:
@@ -194,22 +215,29 @@ class CaffeineMonitor:
 
 
 if __name__ == '__main__':
-    json_filename, json_filename_future, args = set_up()
+    log_filename, json_filename, json_filename_future, args = set_up()
 
-    print(f'json_filename is {json_filename}; json_filename_future is {json_filename_future}')
+    print(f'log_filename is {log_filename}, json_filename is {json_filename}; json_filename_future is {json_filename_future}')
 
     try:
-        file = open(json_filename, 'r+')
+        logfile = open(log_filename, 'r+')
     except OSError as e:
-        print('Unable to open .json file', e)
+        print('Unable to open .log file', e)
         raise
     else:
-        with file:
+        with logfile:
             try:
-                file_future = open(json_filename_future, 'r+')
+                file = open(json_filename, 'r+')
             except OSError as e:
-                print('Unable to open future .json file', e)
-                raise    
-            else:         
-                monitor = CaffeineMonitor(file, file_future, args)
-                monitor.main()
+                print('Unable to open .json file', e)
+                raise
+            else:
+                with file:
+                    try:
+                        file_future = open(json_filename_future, 'r+')
+                    except OSError as e:
+                        print('Unable to open future .json file', e)
+                        raise
+                    else:
+                        monitor = CaffeineMonitor(logfile, file, file_future, args)
+                        monitor.main()

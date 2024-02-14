@@ -1,8 +1,6 @@
 # file: utils.py
-# andrew jarcho
 # created: 2020-04-05
-
-
+import io
 import os
 import sys
 import argparse
@@ -113,6 +111,7 @@ def delete_old_logfile(fname):
         os.remove(fname)
         return True  # return value only used by testing code at present
     except OSError:
+        print('UNABLE TO REMOVE OLD LOG FILE')
         return False  # ditto
 
 def init_logfile(fname):
@@ -120,8 +119,12 @@ def init_logfile(fname):
     Called by: set_up()
     """
     try:
-        with open(fname, 'w') as logfile:
-            logfile.close()
+        with open(fname, 'a+') as logfile:
+            # json.dump({'time': datetime.strftime(datetime(MAXYEAR, 12, 31), '%Y-%m-%d_%H:%M'),
+            #                'level': 0}, logfile)
+            # print('Dummy value', file=logfile)
+            # logfile.seek(0, io.SEEK_END)
+            print("Start of log file", file=logfile)
     except OSError as er:
         print('Unable to create log file in `init_logfile()`', er)
         raise
@@ -132,13 +135,14 @@ def set_up():
     config = read_config_file(CONFIG_FILENAME)
 
     check_cla_match_env(current_environment, args)
-    logging.basicConfig(filename=config[current_environment]['log_file'],
-                        level=logging.INFO,
-                        format='%(levelname)s: %(message)s')
+    # logging.basicConfig(filename=config[current_environment]['log_file'],
+    #                     level=logging.INFO,
+    #                     format='%(levelname)s: %(message)s')
 
     json_filename = config[current_environment]['json_file']
     json_filename_future = config[current_environment]['json_file_future']
     log_filename = config[current_environment]['log_file']
+    my_logfile = Path(log_filename)
     my_file = Path(json_filename)
     my_file_future = Path(json_filename_future)
     if not my_file.is_file() or os.path.getsize(my_file) == 0:
@@ -147,4 +151,9 @@ def set_up():
         init_logfile(log_filename)
     if not my_file_future.is_file() or os.path.getsize(my_file_future) == 0:
         init_future(json_filename_future)
-    return json_filename, json_filename_future, args
+        # delete_old_logfile(log_filename)  # if it exists
+        # init_logfile(log_filename)
+    logging.basicConfig(filename=config[current_environment]['log_file'],
+                        level=logging.INFO,
+                        format='%(levelname)s: %(message)s')
+    return my_logfile, json_filename, json_filename_future, args
