@@ -21,7 +21,7 @@ MINS_DECREMENT = 15  # normally 15
 class CaffeineMonitor:
     half_life = 360  # in minutes
 
-    def __init__(self, logfile, iofile, iofile_future, ags):
+    def __init__(self, logfile, iofile, iofile_future, first_run, ags):
         """
         :param logfile: a Path object
         :param iofile: a Path object
@@ -41,13 +41,15 @@ class CaffeineMonitor:
         self.future_list = []
         self.new_future_list = []
         self.log_line_one = ''
+        self.first_run = first_run
 
     def main(self):
         """Driver"""
         self.read_log()
         self.read_file()  # sets self.data_dict
         self.read_future_file()  # sets self.future_list
-        self.decay_prev_level()
+        if not self.first_run:
+            self.decay_prev_level()
 
         if self.beverage == "coffee":
             self.add_coffee()
@@ -72,7 +74,7 @@ class CaffeineMonitor:
         """Read initial time and caffeine level from file"""
         self.data_dict = json.load(self.iofile)
         if not self.data_dict:
-            self.data_dict = {'time': datetime.now(), 'level': 0.0} 
+            self.data_dict = {'time': datetime.now(), 'level': 0.0}
 
     def read_future_file(self):
         """Read future changes from file"""
@@ -183,7 +185,8 @@ class CaffeineMonitor:
                    self.process_future_list()
         """
         amt_to_decay = self.mg_net_change
-        self.decay_before_add(amt_to_decay)
+        if not self.first_run:
+            self.decay_before_add(amt_to_decay)
         if self.mg_net_change == 0:
             return
 
@@ -211,7 +214,7 @@ class CaffeineMonitor:
 
 
 if __name__ == '__main__':
-    log_filename, json_filename, json_filename_future, args = set_up()
+    log_filename, json_filename, json_filename_future, first_run, args = set_up()
 
     try:
         logfile = open(log_filename, 'r+')
@@ -233,5 +236,5 @@ if __name__ == '__main__':
                         print('Unable to open future .json file', e)
                         raise
                     else:
-                        monitor = CaffeineMonitor(logfile, file, file_future, args)
+                        monitor = CaffeineMonitor(logfile, file, file_future, first_run, args)
                         monitor.main()
