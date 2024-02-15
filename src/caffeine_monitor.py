@@ -185,8 +185,8 @@ class CaffeineMonitor:
                    self.process_future_list()
         """
         amt_to_decay = self.mg_net_change
-        if not self.first_run:
-            self.decay_before_add(amt_to_decay)
+        # if not self.first_run:
+        #     self.decay_before_add(amt_to_decay)
         if self.mg_net_change == 0:
             return
 
