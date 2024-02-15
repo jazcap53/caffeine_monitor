@@ -15,6 +15,9 @@ import logging
 from src.utils import set_up
 
 
+MINS_DECREMENT = 15  # normally 15
+
+
 class CaffeineMonitor:
     half_life = 360  # in minutes
 
@@ -114,18 +117,21 @@ class CaffeineMonitor:
         self.data_dict['level'] *= pow(0.5, (minutes_elapsed /
                                              self.half_life))
 
-    def decay_before_add(self):
+    def decay_before_add(self, amt_to_decay=None):
         """
-        Decay caffeine consumed some time ago (or in the future)
+        Decay caffeine consumed some time ago
         before it gets added to current level.
 
         :return: net change rounded to 1 digit past decimal point
         Called by: main()
         """
+        if amt_to_decay is None:
+            amt_to_decay = self.mg_to_add
+
         curr_time = datetime.today()
-        old_time = curr_time - timedelta(minutes=self.mins_ago)
+        old_time = curr_time - timedelta(minutes=self.mins_ago)  #TODO: '+' or '-' here
         minutes_elapsed = (curr_time - old_time) / timedelta(minutes=1)
-        net_change = (self.mg_to_add *
+        net_change = (amt_to_decay *
                       pow(0.5, (minutes_elapsed / self.half_life)))
         self.mg_net_change = round(net_change, 1)
 
@@ -145,7 +151,7 @@ class CaffeineMonitor:
 
         for i in range(4):
             self.process_item()
-            self.mins_ago -= 15
+            self.mins_ago -= MINS_DECREMENT
 
     def add_soda(self):
         """
@@ -162,6 +168,7 @@ class CaffeineMonitor:
         self.future_list.sort(key=lambda x: x['time'], reverse=True)
         while self.future_list:
             item = self.future_list.pop()
+            # self.decay_before_add(item['level'])   # DA suggestion -- doesn't work
             curr_time = datetime.today()
             item_time = datetime.strptime(item['time'], '%Y-%m-%d_%H:%M')
             self.mins_ago = (curr_time - item_time) / timedelta(minutes=1)
@@ -175,11 +182,14 @@ class CaffeineMonitor:
         Called by: self.add_coffee(), self.add_soda(), 
                    self.process_future_list()
         """
+        amt_to_decay = self.mg_net_change
+        self.decay_before_add(amt_to_decay)
         if self.mg_net_change == 0:
             return
 
         if self.mins_ago < 0:  # item is still in the future
-            time = datetime.strptime(self.data_dict['time'], '%Y-%m-%d_%H:%M') + timedelta(minutes=-self.mins_ago)
+            time = (datetime.strptime(self.data_dict['time'], '%Y-%m-%d_%H:%M') +
+                    timedelta(minutes=-self.mins_ago))
             self.new_future_list.append({"time": time.strftime('%Y-%m-%d_%H:%M'),  
                                          "level": self.mg_net_change})
         elif self.mins_ago == 0:

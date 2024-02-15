@@ -100,7 +100,8 @@ def init_future(fname):
     """Create an empty .json file"""
     try:
         with open(fname, 'w') as outfile_future:
-             json.dump([{"time": datetime.strftime(datetime(MAXYEAR, 12, 31), '%Y-%m-%d_%H:%M'), "level": 0}], outfile_future)
+            # json.dump([{"time": datetime.strftime(datetime(MAXYEAR, 12, 31), '%Y-%m-%d_%H:%M'), "level": 0}], outfile_future)
+            json.dump([], outfile_future)
     except OSError as er:
         print('Unable to create dummy future .json file in `init_future()`',
               er)
