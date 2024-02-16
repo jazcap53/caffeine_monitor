@@ -15,7 +15,7 @@ import logging
 from src.utils import set_up
 
 
-MINS_DECREMENT = 15  # normally 15
+MINS_DECREMENT = 15
 
 
 class CaffeineMonitor:
@@ -42,6 +42,7 @@ class CaffeineMonitor:
         self.new_future_list = []
         self.log_line_one = ''
         self.first_run = first_run
+        # self.curr_time = datetime.today()    # N.Y.I.
 
     def main(self):
         """Driver"""
@@ -159,7 +160,7 @@ class CaffeineMonitor:
         """
         Called by: main()
         """
-        pass  # drink 65% at self.mins_ago, 25% after 20 min, 10% after 20 min
+        pass  # drink 65% at self.mins_ago, 25% after 20 min, 10% after 20 min    n.y.i.
 
     def process_future_list(self):
         """
@@ -170,7 +171,6 @@ class CaffeineMonitor:
         self.future_list.sort(key=lambda x: x['time'], reverse=True)
         while self.future_list:
             item = self.future_list.pop()
-            # self.decay_before_add(item['level'])   # DA suggestion -- doesn't work
             curr_time = datetime.today()
             item_time = datetime.strptime(item['time'], '%Y-%m-%d_%H:%M')
             self.mins_ago = (curr_time - item_time) / timedelta(minutes=1)
@@ -184,9 +184,6 @@ class CaffeineMonitor:
         Called by: self.add_coffee(), self.add_soda(), 
                    self.process_future_list()
         """
-        amt_to_decay = self.mg_net_change
-        # if not self.first_run:
-        #     self.decay_before_add(amt_to_decay)
         if self.mg_net_change == 0:
             return
 
