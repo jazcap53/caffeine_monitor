@@ -195,7 +195,7 @@ class CaffeineMonitor:
         elif self.mins_ago == 0:
             self.add_caffeine()
         else:
-            self.decay_before_add()
+            self.decay_before_add(self.mg_net_change)
             self.add_caffeine()
 
     def update_time(self):
