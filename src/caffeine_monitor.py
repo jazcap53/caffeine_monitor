@@ -15,7 +15,8 @@ import logging
 from src.utils import set_up
 
 
-MINS_DECREMENT = 15
+COFFEE_MINS_DECREMENT = 15
+SODA_MINS_DECREMENT = 20
 
 
 class CaffeineMonitor:
@@ -154,13 +155,30 @@ class CaffeineMonitor:
 
         for i in range(4):
             self.process_item()
-            self.mins_ago -= MINS_DECREMENT
+            self.mins_ago -= COFFEE_MINS_DECREMENT
 
     def add_soda(self):
         """
         Called by: main()
         """
-        pass  # drink 65% at self.mins_ago, 25% after 20 min, 10% after 20 min    n.y.i.
+        # drink 65% now, 25% after SODA_MINS_DECRMENT minutes,
+        # remaining 10% after another SODA_MINS_DECRMENT minutes
+        soda_amt = self.mg_to_add
+
+        first_amt = soda_amt * 0.65
+        self.mg_net_change = first_amt
+        self.mins_ago = 0
+        self.process_item()
+
+        second_amt = soda_amt * 0.25
+        self.mins_ago -= SODA_MINS_DECREMENT
+        self.mg_net_change = second_amt
+        self.process_item()
+
+        third_amt = soda_amt * 0.1
+        self.mins_ago -= SODA_MINS_DECREMENT
+        self.mg_net_change = third_amt
+        self.process_item()
 
     def process_future_list(self):
         """
