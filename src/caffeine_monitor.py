@@ -43,7 +43,7 @@ class CaffeineMonitor:
         self.new_future_list = []
         self.log_line_one = ''
         self.first_run = first_run
-        # self.curr_time = datetime.today()    # N.Y.I.
+        self.curr_time = datetime.today()
 
     def main(self):
         """Driver"""
@@ -111,12 +111,11 @@ class CaffeineMonitor:
         Reduce stored level to account for decay since that value
         was written
         """
-        curr_time = datetime.today()
         stored_time = datetime.strptime(self.data_dict['time'],
                                         '%Y-%m-%d_%H:%M')
-        minutes_elapsed = (curr_time -
+        minutes_elapsed = (self.curr_time -
                            stored_time) / timedelta(minutes=1)
-        self.data_dict['time'] = datetime.strftime(curr_time,
+        self.data_dict['time'] = datetime.strftime(self.curr_time,
                                                    '%Y-%m-%d_%H:%M')
         self.data_dict['level'] *= pow(0.5, (minutes_elapsed /
                                              self.half_life))
@@ -132,9 +131,8 @@ class CaffeineMonitor:
         if amt_to_decay is None:
             amt_to_decay = self.mg_to_add
 
-        curr_time = datetime.today()
-        old_time = curr_time - timedelta(minutes=self.mins_ago)  #TODO: '+' or '-' here
-        minutes_elapsed = (curr_time - old_time) / timedelta(minutes=1)
+        old_time = self.curr_time - timedelta(minutes=self.mins_ago)  #TODO: '+' or '-' here
+        minutes_elapsed = (self.curr_time - old_time) / timedelta(minutes=1)
         net_change = (amt_to_decay *
                       pow(0.5, (minutes_elapsed / self.half_life)))
         self.mg_net_change = round(net_change, 1)
@@ -189,9 +187,8 @@ class CaffeineMonitor:
         self.future_list.sort(key=lambda x: x['time'], reverse=True)
         while self.future_list:
             item = self.future_list.pop()
-            curr_time = datetime.today()
             item_time = datetime.strptime(item['time'], '%Y-%m-%d_%H:%M')
-            self.mins_ago = (curr_time - item_time) / timedelta(minutes=1)
+            self.mins_ago = (self.curr_time - item_time) / timedelta(minutes=1)
             self.mg_net_change = item['level']
             self.process_item()
 
