@@ -43,7 +43,7 @@ class CaffeineMonitor:
         self.new_future_list = []
         self.log_line_one = ''
         self.first_run = first_run
-        self.curr_time = datetime.today()
+        self._curr_time = datetime.today()
 
     def main(self):
         """Driver"""
@@ -219,6 +219,14 @@ class CaffeineMonitor:
         """
         self.data_dict['time'] = datetime.strftime(datetime.today(),
                                                    '%Y-%m-%d_%H:%M')
+
+    @property
+    def curr_time(self):
+        return self._curr_time
+
+    @curr_time.setter
+    def curr_time(self, new_time):
+        self._curr_time = new_time
 
     def __str__(self):
         return (f'Caffeine level is {round(self.data_dict["level"], 1)} '
