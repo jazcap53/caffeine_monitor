@@ -34,7 +34,14 @@ def fake_file():
         def truncate(self, size=0):
             self.content = self.content[:size]
 
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+
     return FakeFile()
+
 
 @pytest.fixture(scope='function')
 def test_files(tmpdir, fake_file):
@@ -47,6 +54,7 @@ def test_files(tmpdir, fake_file):
     json_file.content = json.dumps(json_data)
     return log_file, json_file, json_future_file
 
+
 @pytest.fixture(scope='function')
 def cm(test_files):
     log_file = test_files[0]
@@ -55,6 +63,7 @@ def cm(test_files):
     first_run = True
     fake_ags = Namespace(mg=0, mins=0, bev='coffee')
     yield CaffeineMonitor(log_file, json_file, json_future_file, first_run, fake_ags)
+
 
 @pytest.fixture
 def nmsp():

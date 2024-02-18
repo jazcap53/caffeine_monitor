@@ -25,31 +25,38 @@ def test_read_file(test_files, nmsp):
 
 
 def test_write_file_add_mg(cm, test_files, caplog):
-    with open(test_files[0], 'r+') as l_file_handle:
-        cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
-        cm.data_dict = {'level': 140.0, 'time': cur_time}
-        caplog.set_level('INFO')
+    # with open(test_files[0], 'r+') as l_file_handle:
+    fake_io_file = test_files[0]
+    cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
+    cm.data_dict = {'level': 140.0, 'time': cur_time}
+    caplog.set_level('INFO')
 
-        cm.mins_ago = 0
-        cm.mg_to_add = 140
-        cm.mg_net_change = 140.0
+    cm.mins_ago = 0
+    cm.mg_to_add = 140
+    cm.mg_net_change = 140.0
 
-        cm.write_file()
+    cm.iofile = fake_io_file
+    # cm.write_file()
+    orig_level = cm.data_dict['level']
+    cm.add_caffeine()
 
-        assert f'140.0 mg added (140 mg, 0 mins ago): level is 140.0 at {cur_time}' in caplog.text
-        assert len(caplog.records) == 1
+    assert f'140.0 mg added (140 mg, 0 mins ago): level is {orig_level + cm.mg_net_change} at {cur_time}' in caplog.text
+    assert len(caplog.records) == 1
 
 
 def test_write_file_add_no_mg(cm, test_files, caplog):
-    with open(test_files[0], 'r+') as l_file_handle:
-        cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
-        cm.data_dict = {'level': 140.0, 'time': cur_time}
-        caplog.set_level('DEBUG')
+    # with open(test_files[0], 'r+') as l_file_handle:
+    my_fake_file = test_files[0]
+    cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
+    cm.data_dict = {'level': 140.0, 'time': cur_time}
+    caplog.set_level('DEBUG')
 
-        cm.write_file()
+    cm.iofile = my_fake_file
+    # cm.write_file()
+    cm.add_caffeine()
 
-        assert f'level is 140.0 at {cur_time}' in caplog.text
-        assert len(caplog.records) == 1
+    assert f'level is 140.0 at {cur_time}' in caplog.text
+    assert len(caplog.records) == 1
 
 
 def test_decay_prev_level(cm):
