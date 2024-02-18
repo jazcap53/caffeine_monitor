@@ -4,6 +4,7 @@ import pytest
 from src.caffeine_monitor import CaffeineMonitor
 from argparse import Namespace
 
+
 @pytest.fixture
 def fake_file():
     class FakeFile:

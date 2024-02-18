@@ -25,7 +25,6 @@ def test_read_file(test_files, nmsp):
 
 
 def test_write_file_add_mg(cm, test_files, caplog):
-    # with open(test_files[0], 'r+') as l_file_handle:
     fake_io_file = test_files[0]
     cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
     cm.data_dict = {'level': 140.0, 'time': cur_time}
@@ -36,7 +35,6 @@ def test_write_file_add_mg(cm, test_files, caplog):
     cm.mg_net_change = 140.0
 
     cm.iofile = fake_io_file
-    # cm.write_file()
     orig_level = cm.data_dict['level']
     cm.add_caffeine()
 
@@ -45,14 +43,12 @@ def test_write_file_add_mg(cm, test_files, caplog):
 
 
 def test_write_file_add_no_mg(cm, test_files, caplog):
-    # with open(test_files[0], 'r+') as l_file_handle:
     my_fake_file = test_files[0]
     cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
     cm.data_dict = {'level': 140.0, 'time': cur_time}
     caplog.set_level('DEBUG')
 
     cm.iofile = my_fake_file
-    # cm.write_file()
     cm.add_caffeine()
 
     assert f'level is 140.0 at {cur_time}' in caplog.text

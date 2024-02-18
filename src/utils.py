@@ -1,11 +1,10 @@
 # file: utils.py
 # created: 2020-04-05
-import io
 import os
 import sys
 import argparse
 import configparser
-from datetime import datetime, MAXYEAR
+from datetime import datetime
 import json
 from pathlib import Path
 import logging
@@ -51,7 +50,7 @@ def parse_args(args):
     # return parser.parse_args(args)
     args = parser.parse_args(args)
     if args.mins < 0:
-        print("minutes ago argument (mins) may not be < 0")
+        print("minutes ago argument (mins) must not be < 0")
         sys.exit(1)
 
     return args
@@ -100,7 +99,6 @@ def init_future(fname):
     """Create an empty .json file"""
     try:
         with open(fname, 'w') as outfile_future:
-            # json.dump([{"time": datetime.strftime(datetime(MAXYEAR, 12, 31), '%Y-%m-%d_%H:%M'), "level": 0}], outfile_future)
             json.dump([], outfile_future)
     except OSError as er:
         print('Unable to create dummy future .json file in `init_future()`',
