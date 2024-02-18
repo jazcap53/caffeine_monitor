@@ -4,38 +4,48 @@ import pytest
 from src.caffeine_monitor import CaffeineMonitor
 from argparse import Namespace
 
-
 @pytest.fixture
 def fake_file():
     class FakeFile:
-        def __init__(self):
-            self.log_contents = ""
-            self.json_contents = ""
-            self.json_future_contents = ""
+        def __init__(self, initial_content=''):
+            self.content = initial_content
+            self.position = 0
+
+        def read(self, size=None):
+            if size is None:
+                result = self.content[self.position:]
+                self.position = len(self.content)
+            else:
+                result = self.content[self.position:self.position + size]
+                self.position += size
+            return result
 
         def write(self, data):
-            self.log_contents += data
+            self.content += data
 
-        def dump(self, data):
-            self.json_contents += data
+        def seek(self, offset, whence=0):
+            if whence == 0:
+                self.position = offset
+            elif whence == 1:
+                self.position += offset
+            elif whence == 2:
+                self.position = len(self.content) + offset
+
+        def truncate(self, size=0):
+            self.content = self.content[:size]
 
     return FakeFile()
 
-
 @pytest.fixture(scope='function')
 def test_files(tmpdir, fake_file):
-    log_file = fake_file  # tmpdir.join('empty_caffeine_test.log')
-    json_file = fake_file  # tmpdir.join('empty_caffeine_test.json')
+    log_file = fake_file
+    json_file = fake_file
     json_future_file = fake_file
     a_datetime = datetime(2020, 4, 1, 12, 51)
     fmt_a_datetime = a_datetime.strftime('%Y-%m-%d_%H:%M')
-    # with open(log_file, 'w') as l_file, open(json_file, 'w') as j_file:
-    #     l_file.write(f'48 mg added: level is 48.0 at {fmt_a_datetime}')
-    #     json_data = {"time": fmt_a_datetime, "level": 48.0}
-    #     json.dump(json_data, j_file)
-    # return log_file.strpath, json_file.strpath
+    json_data = {"time": fmt_a_datetime, "level": 48.0}
+    json_file.content = json.dumps(json_data)
     return log_file, json_file, json_future_file
-
 
 @pytest.fixture(scope='function')
 def cm(test_files):
@@ -44,6 +54,8 @@ def cm(test_files):
     json_future_file = test_files[2]
     first_run = True
     fake_ags = Namespace(mg=0, mins=0, bev='coffee')
-    # with open(json_file, 'r+') as j_file:
-    #     yield CaffeineMonitor(fake_file, fake_ags)
     yield CaffeineMonitor(log_file, json_file, json_future_file, first_run, fake_ags)
+
+@pytest.fixture
+def nmsp():
+    return Namespace(mg=100, mins=180, bev='coffee')

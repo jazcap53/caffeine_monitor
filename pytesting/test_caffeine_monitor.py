@@ -14,15 +14,13 @@ def test_can_make_caffeine_monitor_instance(test_files):
     assert cm.mins_ago == 180
 
 
-def test_read_file(test_files):
-    with open(test_files[1], 'r+') as j_file_handle:
-        cm = CaffeineMonitor(j_file_handle, Namespace(mg=200, mins=360,
-                                                      test=True))
-        assert(isinstance(cm, CaffeineMonitor))
-        cm.read_file()
-        assert cm.data_dict['level'] == 48
-        dt_out = datetime(2020, 4, 1, 12, 51)
-        assert cm.data_dict['time'] == datetime.strftime(dt_out,
+def test_read_file(test_files, nmsp):
+    cm = CaffeineMonitor(test_files[0], test_files[1], test_files[2], True, nmsp)
+    assert(isinstance(cm, CaffeineMonitor))
+    cm.read_file()
+    assert cm.data_dict['level'] == 48
+    dt_out = datetime(2020, 4, 1, 12, 51)
+    assert cm.data_dict['time'] == datetime.strftime(dt_out,
                                                          '%Y-%m-%d_%H:%M')
 
 
