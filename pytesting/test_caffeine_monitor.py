@@ -81,13 +81,14 @@ def test_decay_prev_level(test_files, nmsp):
   freezer.stop()
 
 
-def test_decay_before_add_360_mins_elapsed(cm):
-    cm.read_file()  # loads cm.data_dict from file
+def test_decay_before_add_360_mins_elapsed(cm, test_files, nmsp):
+    cm = CaffeineMonitor(test_files[0], test_files[1], test_files[2], True, nmsp)
+    cm.data_dict = {'level': 48.0, 'time': datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')}
     assert cm.data_dict['level'] == 48.0
     assert cm.data_dict['time'] == datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')
     cm.mg_to_add = 200
     cm.mins_ago = 360
-    cm.mg_net_change = cm.decay_before_add()
+    cm.decay_before_add()
     assert cm.mg_net_change == 100
 
 
