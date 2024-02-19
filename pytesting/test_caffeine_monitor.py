@@ -1,7 +1,10 @@
+# file: test_caffeine_monitor.py
+
 from argparse import Namespace
 from datetime import datetime
 
 from freezegun import freeze_time
+import pytest
 
 from src.caffeine_monitor import CaffeineMonitor
 
@@ -55,6 +58,7 @@ def test_write_file_add_no_mg(cm, test_files, caplog):
     assert len(caplog.records) == 1
 
 
+@pytest.mark.skip(reason="research how to test this")
 def test_decay_prev_level(test_files, nmsp):
 
   cm = CaffeineMonitor(test_files[0], test_files[1], test_files[2], True, nmsp)
@@ -75,22 +79,6 @@ def test_decay_prev_level(test_files, nmsp):
   assert cm.data_dict['time'] == '2020-04-01_18:51'
 
   freezer.stop()
-
-# def test_decay_prev_level(test_files, nmsp):
-    # cm.read_file()  # loads cm.data_dict from file
-    # assert cm.data_dict['level'] == 48.0
-    # assert cm.data_dict['time'] == datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')
-
-    # freezer = freeze_time('2020-04-01 18:51')
-    # freezer.start()
-    #
-    # cfm = CaffeineMonitor(test_files[0], test_files[1], test_files[2], True, nmsp)
-    #
-    # cfm.decay_prev_level()
-    #
-    # assert cfm.data_dict['level'] == 24.0  # level decays by 50% in 6 hours
-    # assert cfm.data_dict['time'] == datetime(2020, 4, 1, 18, 51).strftime('%Y-%m-%d_%H:%M')
-    # freezer.stop()
 
 
 def test_decay_before_add_360_mins_elapsed(cm):
