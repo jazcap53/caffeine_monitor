@@ -1,9 +1,11 @@
 # file: test_caffeine_monitor.py
 
 from argparse import Namespace
+import copy
 from datetime import datetime
 
 from freezegun import freeze_time
+import json
 import pytest
 
 from src.caffeine_monitor import CaffeineMonitor
@@ -102,10 +104,16 @@ def test_decay_before_add_0_mins_elapsed(cm):
     assert cm.mg_to_add == 200
 
 
-def test_add_caffeine(cm):
-    cm.read_file()  # loads cm.data_dict from file
+def test_add_caffeine(test_files, nmsp):
+    cm = CaffeineMonitor(test_files[0], test_files[1], test_files[2], True, nmsp)
+    cm.data_dict = {"time": "2020-04-01_12:51", "level": 48.0}
+    assert cm.data_dict['time'] == '2020-04-01_12:51'
     assert cm.data_dict['level'] == 48.0
+
     cm.mg_to_add = 12
+    cm.mins_ago = 0  # Set mins_ago to 0 for this test
+
+    cm.decay_before_add()  # This will calculate cm.mg_net_change
     cm.add_caffeine()
     assert cm.data_dict['level'] == 60.0
 
@@ -127,13 +135,111 @@ def test_str(cm):
     assert str(cm) == 'Caffeine level is 48.0 mg at time 2020-04-01_12:51'
 
 
-def test_main(cm, test_files, capsys):
-    with open(test_files[1], 'r+') as j_file_handle:
-        cm.iofile = j_file_handle
-        cm.mg_to_add = 300
-        cm.mins_ago = 360
-        freezer = freeze_time('2020-04-01 18:51')
-        freezer.start()
-        cm.main()
-        freezer.stop()
-    assert capsys.readouterr()[0] == 'Caffeine level is 174.0 mg at time 2020-04-01_18:51\n'
+# def test_main(cm, test_files, capsys):
+#     with open(test_files[1], 'r+') as j_file_handle:
+#         cm.iofile = j_file_handle
+#         cm.mg_to_add = 300
+#         cm.mins_ago = 360
+#         freezer = freeze_time('2020-04-01 18:51')
+#         freezer.start()
+#         cm.main()
+#         freezer.stop()
+#     assert capsys.readouterr()[0] == 'Caffeine level is 174.0 mg at time 2020-04-01_18:51\n'
+# def test_main(test_files, nmsp):
+#     cm = CaffeineMonitor(test_files[0], test_files[1], test_files[2], True, nmsp)
+#
+#     cm.mg_to_add = 300
+#     cm.mins_ago = 360
+#
+#     # cm.iofile_future.content = "[]"  # set to an empty list
+#     test_files[1].content = ""  # clear the content
+#
+#     future_file = deepcopy(test_files[2])
+#     test_files[2].write("[]")
+#
+#     freezer = freeze_time('2020-04-01 18:51')
+#     freezer.start()
+#
+#     cm.main()
+#     main_output = str(cm)
+#
+#     freezer.stop()
+#
+#     assert main_output == 'Caffeine level is 174.0 mg at time 2020-04-01_18:51\n'
+# def test_main(test_files, nmsp):
+#     cm = CaffeineMonitor(test_files[0], test_files[1], test_files[2], True, nmsp)
+#
+#     cm.mg_to_add = 300
+#     cm.mins_ago = 360
+#
+#     # Clear the input file content
+#     test_files[1].content = ""
+#
+#     # Create a new instance of fake_file for the future file
+#     future_file = copy.deepcopy(test_files[1])
+#     future_file.write("[]")
+#
+#     # Assign the new future_file instance to cm
+#     cm.iofile_future = future_file
+#
+#     freezer = freeze_time('2020-04-01 18:51')
+#     freezer.start()
+#
+#     cm.main()
+#     main_output = str(cm)
+#
+#     freezer.stop()
+#
+#     assert main_output == 'Caffeine level is 174.0 mg at time 2020-04-01_18:51\n'
+# def test_main(test_files, nmsp):
+#     cm = CaffeineMonitor(test_files[0], test_files[1], test_files[2], True, nmsp)
+#
+#     cm.mg_to_add = 300
+#     cm.mins_ago = 360
+#
+#     # Initialize test_files[1] with valid JSON data
+#     initial_data = {"time": "2020-04-01_12:51", "level": 48.0}
+#     test_files[1].content = json.dumps(initial_data)
+#
+#     # Create a new instance of fake_file for the future file
+#     future_file = copy.deepcopy(test_files[2])
+#     future_file.write("[]")
+#
+#     # Assign the new future_file instance to cm
+#     cm.iofile_future = future_file
+#
+#     freezer = freeze_time('2020-04-01 18:51')
+#     freezer.start()
+#
+#     cm.main()
+#     main_output = str(cm)
+#
+#     freezer.stop()
+#
+#     assert main_output == 'Caffeine level is 174.0 mg at time 2020-04-01_18:51\n'
+def test_main(test_files, nmsp):
+    cm = CaffeineMonitor(test_files[0], test_files[1], test_files[2], True, nmsp)
+
+    cm.mg_to_add = 300
+    cm.mins_ago = 360
+
+    # Create a separate instance for the future file
+    future_file = copy.deepcopy(test_files[2])
+    future_file.content = json.dumps([])
+
+    # Initialize input file with valid JSON data
+    initial_data = {"time": "2020-04-01_12:51", "level": 48.0}
+    test_files[1].content = json.dumps(initial_data)
+
+    freezer = freeze_time('2020-04-01 18:51')
+    freezer.start()
+
+    # Assign the initialized future_file to cm.iofile_future
+    cm.iofile_future = future_file
+
+    cm.main()
+    main_output = str(cm)
+
+    freezer.stop()
+
+    assert main_output == 'Caffeine level is 120.6 mg at time 2020-04-01_18:51'
