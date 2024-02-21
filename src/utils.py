@@ -24,11 +24,14 @@ def check_which_environment():
     return which_env
 
 
-def parse_args(args):
+def parse_args(args=None):
     """
     Parse the command line arguments
     :return: an argparse.Namespace instance
     """
+    if args is None:
+        args = sys.argv[1:]
+
     parser = argparse.ArgumentParser(description='Estimate the quantity '
                                                  'of caffeine (in mg) in the '
                                                  'user\'s body')

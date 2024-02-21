@@ -22,7 +22,8 @@ def test_bad_caff_env_value_exits(mocker):
 
 
 def test_parse_args():
-    args = parse_args(sys.argv[1:])
+    # args = parse_args(sys.argv[1:])
+    args = parse_args()
     assert args.mg is not None
     assert args.mins is not None
     assert args.test is not None
