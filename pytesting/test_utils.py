@@ -1,10 +1,10 @@
 # file: test_utils.py
 
+from argparse import Namespace
 import sys
 import os
 import json
-from argparse import Namespace
-
+from pathlib import PosixPath
 import pytest
 from freezegun import freeze_time
 
@@ -66,9 +66,12 @@ def test_check_which_environment_set_prod(mocker):
 def test_set_up(mocker):
     mocker.patch('sys.argv')
     sys.argv = ['pytest', '0', '0', '-t']
-    json_filename, args = set_up()
-    assert json_filename == 'tests/caff_test.json'
-    assert args == Namespace(mg=0, mins=0, test=True)
+    log_filename, json_filename, json_future_filename, first_run, args = set_up()
+    assert str(log_filename) == 'tests/caff_test.log'
+    assert str(json_filename) == 'tests/caff_test.json'
+    assert str(json_future_filename) == 'tests/caff_test_future.json'
+    assert first_run is False
+    assert args == Namespace(mg=0, mins=0, test=True, bev='coffee')
 
 
 def test_read_config_file_fake(tmpdir):
