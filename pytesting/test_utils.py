@@ -4,13 +4,14 @@ from argparse import Namespace
 import sys
 import os
 import json
-from pathlib import PosixPath
+# from pathlib import PosixPath
 import pytest
 from freezegun import freeze_time
 
 from src.utils import (check_which_environment, parse_args, set_up,
                        read_config_file, check_cla_match_env, init_storage,
                        delete_old_logfile)
+import subprocess
 
 
 def test_bad_caff_env_value_exits(mocker):
@@ -19,6 +20,38 @@ def test_bad_caff_env_value_exits(mocker):
     os.environ['CAFF_ENV'] = 'bongo'
     __ = check_which_environment()
     assert sys.exit.called_once_with(0)
+
+
+def test_parse_valid_args(tmpdir):
+    # Create a temporary log file
+    log_file = tmpdir.join('test.log')
+    print(f'log_file is {log_file}')
+    # Print the path of the temporary directory
+    print("Temporary directory:", tmpdir)
+    log_file.write('')
+
+    # Call the script from the command line with valid arguments
+    cmd = [sys.executable, 'src/caffeine_monitor.py', '-t', '100']
+    try:
+        subprocess.run(cmd, check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        pytest.fail(f"Command '{' '.join(cmd)}' failed with error: {e.stderr.decode('utf-8')}")
+
+    # Assert that the log file was created and contains the expected output
+    assert log_file.read() == 'INFO: 25.0 mg added (100 mg, 0 mins ago): level is 25.0 at ...'
+
+
+def test_parse_invalid_args(tmpdir):
+    # Call the script from the command line with an invalid argument
+    cmd = [sys.executable, 'src/caffeine_monitor.py', '-t', '-1']
+    try:
+        subprocess.run(cmd, check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        # Assert that the script exited with a non-zero code and printed the expected error message
+        assert e.returncode != 0
+        assert b'minutes ago argument (mins) must not be < 0' in e.stderr
+    else:
+        pytest.fail("Command should have failed with an error message")
 
 
 def test_parse_args():
