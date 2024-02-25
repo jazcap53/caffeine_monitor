@@ -3,7 +3,7 @@
 import json
 from datetime import datetime
 import pytest
-from src.caffeine_monitor import CaffeineMonitor
+from caffeine_monitor.src.caffeine_monitor import CaffeineMonitor
 from argparse import Namespace
 
 
