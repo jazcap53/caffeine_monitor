@@ -8,10 +8,11 @@ import json
 import pytest
 from freezegun import freeze_time
 
-from src.utils import (check_which_environment, parse_args, set_up,
-                       read_config_file, check_cla_match_env, init_storage,
-                       delete_old_logfile)
+from caffeine_monitor.src.utils import (check_which_environment, parse_args, set_up,
+                                        read_config_file, check_cla_match_env, init_storage,
+                                        delete_old_logfile)
 import subprocess
+from caffeine_monitor.src.caffeine_monitor import CaffeineMonitor
 
 
 def test_bad_caff_env_value_exits(mocker):
@@ -22,23 +23,40 @@ def test_bad_caff_env_value_exits(mocker):
     assert sys.exit.called_once_with(0)
 
 
-def test_parse_valid_args(tmpdir):
-    # Create a temporary log file
-    log_file = tmpdir.join('test.log')
-    print(f'log_file is {log_file}')
-    # Print the path of the temporary directory
-    print("Temporary directory:", tmpdir)
-    log_file.write('')
+def test_parse_valid_args(tmpdir, mocker):
+    # Get the path to the temporary directory
+    tmp_dir_path = tmpdir.strpath
 
-    # Call the script from the command line with valid arguments
-    cmd = [sys.executable, 'src/caffeine_monitor.py', '-t', '100']
-    try:
-        subprocess.run(cmd, check=True, capture_output=True)
-    except subprocess.CalledProcessError as e:
-        pytest.fail(f"Command '{' '.join(cmd)}' failed with error: {e.stderr.decode('utf-8')}")
+    # Create the log file path
+    log_file_path = os.path.join(tmp_dir_path, 'test.log')
 
-    # Assert that the log file was created and contains the expected output
-    assert log_file.read() == 'INFO: 25.0 mg added (100 mg, 0 mins ago): level is 25.0 at ...'
+    # Create a temporary JSON file
+    json_file = tmpdir.join('test.json')
+    json_file.write('{"time": "2023-04-01_12:00", "level": 0.0}')
+
+    # Create a temporary future JSON file
+    json_future_file = tmpdir.join('test_future.json')
+    json_future_file.write('[]')
+
+    # Mock the set_up() function to return the temporary files
+    mocker.patch('caffeine_monitor.src.utils.set_up', return_value=(
+        log_file_path, json_file.strpath, json_future_file.strpath, False,
+        Namespace(mg=100, mins=0, bev='coffee', test=False, pytesting=True)))
+
+    with open(log_file_path, 'a+') as log_file:
+        print(f'tmp_dir_path: {tmp_dir_path}')
+        print(f'log_file_path: {log_file_path}')
+        monitor = CaffeineMonitor(log_file, open(json_file.strpath, 'r+'),
+                                  open(json_future_file.strpath, 'r+'), False,
+                                  Namespace(mg=100, mins=0, bev='coffee'))
+        monitor.main()
+        log_file.seek(0)
+        print('before seek() contents of log file are ')
+        print(log_file.read())
+        log_file.seek(0)
+        print('after seek() contents of log file are ')
+        print(log_file.read())
+        assert log_file.read() == 'INFO: 25.0 mg added (100 mg, 0 mins ago): level is 25.0 at ...'
 
 
 def test_parse_invalid_args(tmpdir):
@@ -86,6 +104,11 @@ def test_check_which_environment_unset(mocker):
     assert sys.exit.called_once_with(0)
 
 
+def test_check_which_environment_set_pytesting(mocker):
+    mocker.patch.dict('os.environ', {'CAFF_ENV': 'pytesting'})
+    assert check_which_environment() == 'pytesting'
+
+
 def test_check_which_environment_set_test(mocker):
     mocker.patch.dict('os.environ', {'CAFF_ENV': 'prod'})
     assert check_which_environment() == 'prod'
@@ -96,15 +119,15 @@ def test_check_which_environment_set_prod(mocker):
     assert check_which_environment() == 'test'
 
 
-def test_set_up(mocker):
+def test_set_up_with_q(mocker):
     mocker.patch('sys.argv')
-    sys.argv = ['pytest', '0', '0', '-t']
+    sys.argv = ['pytest', '0', '0', '-q']
     log_filename, json_filename, json_future_filename, first_run, args = set_up()
-    assert str(log_filename) == 'tests/caff_test.log'
-    assert str(json_filename) == 'tests/caff_test.json'
-    assert str(json_future_filename) == 'tests/caff_test_future.json'
+    assert str(log_filename) == 'pytesting/caff_pytesting.log'
+    assert str(json_filename) == 'pytesting/caff_pytesting.json'
+    assert str(json_future_filename) == 'pytesting/caff_pytesting_future.json'
     assert first_run is False
-    assert args == Namespace(mg=0, mins=0, test=True, bev='coffee')
+    assert args == Namespace(mg=0, mins=0, test=False, pytesting=True, bev='coffee')
 
 
 def test_read_config_file_fake(tmpdir):

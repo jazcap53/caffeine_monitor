@@ -14,12 +14,12 @@ CONFIG_FILENAME = 'src/caffeine.ini'
 
 def check_which_environment():
     """
-    :return: the current environment ('prod' or 'test')
+    :return: the current environment ('prod', 'test', or 'pytesting')
     """
     which_env = os.environ.get('CAFF_ENV')
-    if which_env is None or which_env not in ('prod', 'test'):
+    if which_env is None or which_env not in ('prod', 'test', 'pytesting'):
         print('\nPlease export environment variable CAFF_ENV as '
-              'prod or test\n')
+              'prod, test, or pytesting\n')
         sys.exit(0)
     return which_env
 
@@ -32,25 +32,34 @@ def parse_args(args=None):
     if args is None:
         args = sys.argv[1:]
 
+    # Check for multiple instances of -b/--bev argument
+    if args.count('--bev') + args.count('-b') > 1:
+        raise ValueError("Duplicate -b/--bev argument")
+
     parser = argparse.ArgumentParser(description='Estimate the quantity '
                                                  'of caffeine (in mg) in the '
                                                  'user\'s body')
-    parser.add_argument('-t', '--test', action='store_true',
-                        help='Use test environment')
+
+    env_group = parser.add_mutually_exclusive_group()
+    env_group.add_argument('-t', '--test', action='store_true',
+                            help='Use test environment')
+    env_group.add_argument('-q', '--pytesting', dest='pytesting', action='store_true',
+                            help='Use pytesting environment for pytest runs')
+
     parser.add_argument('mg', nargs='?', type=int, default=0,
                         help='amount of caffeine added (may be 0)')
     parser.add_argument('mins', nargs='?', type=int, default=0,
                         help='minutes ago caffeine was added '
                              '(may be negative, 0, or '
                              'omitted)')
-    parser.add_argument('-b', '--bev', 
-                        required=False, 
-                        choices=['coffee', 'soda'], 
-                        type=str,
-                        default='coffee', 
-                        help="beverage: 'coffee' (default)"
-                        " or soda so far")
-    # return parser.parse_args(args)
+
+    # Parse -b/--bev separately with a default value
+    bev_parser = parser.add_argument_group('beverage options')
+    bev_parser.add_argument('-b', '--bev',
+                            choices=['coffee', 'soda', 'chocolate'],
+                            default='coffee',
+                            help="beverage: 'coffee' (default), 'soda', or 'chocolate'")
+
     args = parser.parse_args(args)
     if args.mins < 0:
         print("minutes ago argument (mins) must not be < 0")
@@ -69,21 +78,34 @@ def check_cla_match_env(cur_env, ags):
     """
     Exit with message if the current environment does not match
     the given command line arguments.
-    :param cur_env: the current environment ('test' or 'prod')
+    :param cur_env: the current environment ('test', 'prod', or 'pytesting')
     :param ags: an argparse.Namespace object
     :return: None
     """
     ags.test = True if '-t' in sys.argv or '--test' in sys.argv else False
+    ags.pytesting = True if '-q' in sys.argv or '--pytesting' in sys.argv else False  # Check for -q or --pytesting flag
 
-    if ags.test and cur_env == 'prod':
-        print("Please switch to the test environment with "
-              "'export CAFF_ENV=test'")
-        sys.exit(0)
-
-    if not ags.test and cur_env == 'test':
-        print("You may switch to the production environment with "
-              "'export CAFF_ENV=prod'")
-        sys.exit(0)
+    if ags.pytesting:
+        if cur_env != 'pytesting':
+            print("pytest run detected, but environment is not set to 'pytesting'.")
+            print("Please switch to the pytesting environment with 'export CAFF_ENV=pytesting'")
+            sys.exit(0)
+    elif ags.test:
+        if cur_env == 'prod':
+            print("Please switch to the test environment with 'export CAFF_ENV=test'")
+            sys.exit(0)
+        elif cur_env == 'pytesting':
+            print("You are in the pytesting environment, which is intended for pytest runs only.")
+            print("Please switch to the test environment with 'export CAFF_ENV=test'")
+            sys.exit(0)
+    else:  # not ags.test and not ags.q
+        if cur_env == 'test':
+            print("You may switch to the production environment with 'export CAFF_ENV=prod'")
+            sys.exit(0)
+        elif cur_env == 'pytesting':
+            print("You are in the pytesting environment, which is intended for pytest runs only.")
+            print("Please switch to the production environment with 'export CAFF_ENV=prod'")
+            sys.exit(0)
 
 
 def init_storage(fname):
