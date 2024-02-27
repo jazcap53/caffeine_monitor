@@ -11,12 +11,12 @@ import pytest
 from src.caffeine_monitor import CaffeineMonitor
 
 
-def test_can_make_caffeine_monitor_instance(test_files):
+def test_can_make_caffeine_monitor_instance(pytesting_files):
     nmspc = Namespace(mg=100, mins=180, bev='coffee')
-    cm = CaffeineMonitor(test_files[0], test_files[1], test_files[2], True, nmspc)
-    assert isinstance(cm, CaffeineMonitor)
-    assert cm.mg_to_add == 100
-    assert cm.mins_ago == 180
+    cm_obj = CaffeineMonitor(*pytesting_files, True, nmspc)
+    assert isinstance(cm_obj, CaffeineMonitor)
+    assert cm_obj.mg_to_add == 100
+    assert cm_obj.mins_ago == 180
 
 
 def test_read_file(test_files, nmsp):

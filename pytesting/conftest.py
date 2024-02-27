@@ -4,7 +4,9 @@ import json
 from datetime import datetime
 import pytest
 from caffeine_monitor.src.caffeine_monitor import CaffeineMonitor
+from caffeine_monitor.src.utils import read_config_file
 from argparse import Namespace
+from pathlib import Path
 
 
 @pytest.fixture
@@ -46,28 +48,48 @@ def fake_file():
     return FakeFile()
 
 
-@pytest.fixture(scope='function')
-def test_files(tmpdir, fake_file):
-    log_file = fake_file
-    json_file = fake_file
-    json_future_file = fake_file
-    a_datetime = datetime(2020, 4, 1, 12, 51)
-    fmt_a_datetime = a_datetime.strftime('%Y-%m-%d_%H:%M')
-    json_data = {"time": fmt_a_datetime, "level": 48.0}
-    json_file.content = json.dumps(json_data)
-    return log_file, json_file, json_future_file
+@pytest.fixture(scope='session')
+def pytesting_files():
+    config = read_config_file('src/caffeine.ini')
+    log_filename = Path(config['pytesting']['log_file'])
+    json_filename = Path(config['pytesting']['json_file'])
+    json_future_filename = Path(config['pytesting']['json_file_future'])
+
+    with (log_filename.open('a+') as log_file, json_filename.open('r+') as json_file,
+          json_future_filename.open('r+') as json_future_file):
+        yield log_file, json_file, json_future_file
 
 
-@pytest.fixture(scope='function')
-def cm(test_files):
-    log_file = test_files[0]
-    json_file = test_files[1]
-    json_future_file = test_files[2]
-    first_run = True
-    fake_ags = Namespace(mg=0, mins=0, bev='coffee')
-    yield CaffeineMonitor(log_file, json_file, json_future_file, first_run, fake_ags)
+# @pytest.fixture(scope='function')
+# def test_files(tmpdir, fake_file):
+#     log_file = fake_file
+#     json_file = fake_file
+#     json_future_file = fake_file
+#     a_datetime = datetime(2020, 4, 1, 12, 51)
+#     fmt_a_datetime = a_datetime.strftime('%Y-%m-%d_%H:%M')
+#     json_data = {"time": fmt_a_datetime, "level": 48.0}
+#     json_file.content = json.dumps(json_data)
+#     return log_file, json_file, json_future_file
 
 
-@pytest.fixture
-def nmsp():
-    return Namespace(mg=100, mins=180, bev='coffee')
+# @pytest.fixture
+# def cm_obj(pytesting_files, request, mg=0, mins=0, bev='coffee'):
+#     log_file, json_file, json_future_file = pytesting_files
+#     args = Namespace(mg=mg, mins=mins, bev=bev)
+#
+#     cm = CaffeineMonitor(log_file, json_file, json_future_file, True, args)
+#     yield cm
+
+
+# @pytest.fixture
+# def nmsp():
+#     return Namespace(mg=100, mins=180, bev='coffee')
+
+
+# ==============
+# SAVING FOR (possible, unlikely) USE IN TESTS
+
+# @pytest.mark.parametrize('cm', [
+#     Namespace(mg=100, mins=20, bev='coffee'),
+#     Namespace(mg=200, mins=10, bev='soda'),
+# ], indirect=True)
