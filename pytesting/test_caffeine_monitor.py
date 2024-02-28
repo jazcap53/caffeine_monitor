@@ -19,14 +19,13 @@ def test_can_make_caffeine_monitor_instance(pytesting_files):
     assert cm_obj.mins_ago == 180
 
 
-def test_read_file(test_files, nmsp):
-    cm = CaffeineMonitor(test_files[0], test_files[1], test_files[2], True, nmsp)
-    assert(isinstance(cm, CaffeineMonitor))
-    cm.read_file()
-    assert cm.data_dict['level'] == 48
-    dt_out = datetime(2020, 4, 1, 12, 51)
-    assert cm.data_dict['time'] == datetime.strftime(dt_out,
-                                                         '%Y-%m-%d_%H:%M')
+def test_read_file(pytesting_files_scratch):
+    nmspc = Namespace(mg=100, mins=180, bev='coffee')
+    cm_obj = CaffeineMonitor(*pytesting_files_scratch, True, nmspc)
+    assert(isinstance(cm_obj, CaffeineMonitor))
+    cm_obj.read_file()
+    assert cm_obj.data_dict['level'] == 0.0
+    assert cm_obj.data_dict['time'] == datetime.now().strftime('%Y-%m-%d_%H:%M')
 
 
 def test_write_file_add_mg(cm, test_files, caplog):
