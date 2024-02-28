@@ -47,7 +47,7 @@ class CaffeineMonitor:
 
     def main(self):
         """Driver"""
-        self.read_log()
+        self.read_log()  # a no-op
         self.read_file()  # sets self.data_dict
         self.read_future_file()  # sets self.future_list
         if not self.first_run:
@@ -141,8 +141,10 @@ class CaffeineMonitor:
         """
         Called by: self.add_coffee()
         """
+        if not self.mg_net_change:
+            return
         self.data_dict['level'] += self.mg_net_change
-        self.write_log()        
+        self.write_log()
 
     def add_coffee(self):
         """
