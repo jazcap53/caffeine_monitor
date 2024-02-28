@@ -12,6 +12,9 @@ from src.caffeine_monitor import CaffeineMonitor
 
 
 def test_can_make_caffeine_monitor_instance(pytesting_files):
+    """
+    Check
+    """
     nmspc = Namespace(mg=100, mins=180, bev='coffee')
     cm_obj = CaffeineMonitor(*pytesting_files, True, nmspc)
     assert isinstance(cm_obj, CaffeineMonitor)
@@ -20,40 +23,46 @@ def test_can_make_caffeine_monitor_instance(pytesting_files):
 
 
 def test_read_file(pytesting_files_scratch):
+    """
+    Check read_file() sets data_dict values
+    """
     nmspc = Namespace(mg=100, mins=180, bev='coffee')
     cm_obj = CaffeineMonitor(*pytesting_files_scratch, True, nmspc)
     assert(isinstance(cm_obj, CaffeineMonitor))
+    assert cm_obj.data_dict == {}
     cm_obj.read_file()
     assert cm_obj.data_dict['level'] == 0.0
     assert cm_obj.data_dict['time'] == datetime.now().strftime('%Y-%m-%d_%H:%M')
 
 
-def test_write_file_add_mg(cm, test_files, caplog):
-    fake_io_file = test_files[0]
+def test_write_file_add_mg(pytesting_files, caplog):
+    """
+    Check add_caffeine() adds mg_net_change
+    Check add_caffeine() writes correct value to log
+    """
+    nmspc = Namespace(mg=140, mins=0, bev='coffee')
+    cm_obj = CaffeineMonitor(*pytesting_files, True, nmspc)
     cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
-    cm.data_dict = {'level': 140.0, 'time': cur_time}
+    orig_level = 100.0
+
+    cm_obj.data_dict = {'level': orig_level, 'time': cur_time}
+    cm_obj.mg_net_change = cm_obj.mg_to_add
     caplog.set_level('INFO')
 
-    cm.mins_ago = 0
-    cm.mg_to_add = 140
-    cm.mg_net_change = 140.0
+    cm_obj.add_caffeine()
 
-    cm.iofile = fake_io_file
-    orig_level = cm.data_dict['level']
-    cm.add_caffeine()
-
-    assert f'140.0 mg added (140 mg, 0 mins ago): level is {orig_level + cm.mg_net_change} at {cur_time}' in caplog.text
+    assert f'140.0 mg added (140 mg, 0 mins ago): level is {orig_level + cm_obj.mg_net_change} at {cur_time}' in caplog.text
     assert len(caplog.records) == 1
 
 
-def test_write_file_add_no_mg(cm, test_files, caplog):
-    my_fake_file = test_files[0]
+def test_write_file_add_no_mg(pytesting_files, caplog):
+    nmspc = Namespace(mg=140, mins=0, bev='coffee')
+    cm_obj = CaffeineMonitor(*pytesting_files, True, nmspc)
     cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
-    cm.data_dict = {'level': 140.0, 'time': cur_time}
+    cm_obj.data_dict = {'level': 140.0, 'time': cur_time}
     caplog.set_level('DEBUG')
 
-    cm.iofile = my_fake_file
-    cm.add_caffeine()
+    cm_obj.add_caffeine()
 
     assert f'level is 140.0 at {cur_time}' in caplog.text
     assert len(caplog.records) == 1
@@ -82,25 +91,28 @@ def test_decay_prev_level(test_files, nmsp):
   freezer.stop()
 
 
-def test_decay_before_add_360_mins_elapsed(cm, test_files, nmsp):
-    cm = CaffeineMonitor(test_files[0], test_files[1], test_files[2], True, nmsp)
-    cm.data_dict = {'level': 48.0, 'time': datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')}
-    assert cm.data_dict['level'] == 48.0
-    assert cm.data_dict['time'] == datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')
-    cm.mg_to_add = 200
-    cm.mins_ago = 360
-    cm.decay_before_add()
-    assert cm.mg_net_change == 100
+def test_decay_before_add_360_mins_elapsed(pytesting_files):
+    nmspc = Namespace(mg=100, mins=180, bev='coffee')
+    cm_obj = CaffeineMonitor(*pytesting_files, False, nmspc)
+    cm_obj.data_dict = {'level': 48.0, 'time': datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')}
+    assert cm_obj.data_dict['level'] == 48.0
+    assert cm_obj.data_dict['time'] == datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')
+    cm_obj.mg_to_add = 200
+    cm_obj.mins_ago = 360
+    cm_obj.decay_before_add()
+    assert cm_obj.mg_net_change == 100
 
 
-def test_decay_before_add_0_mins_elapsed(cm):
-    cm.read_file()  # loads cm.data_dict from file
-    assert cm.data_dict['level'] == 48.0
-    assert cm.data_dict['time'] == datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')
-    cm.mg_to_add = 200
-    cm.mins_ago = 0
-    cm.decay_before_add()
-    assert cm.mg_to_add == 200
+def test_decay_before_add_0_mins_elapsed(pytesting_files_scratch):
+    nmspc = Namespace(mg=100, mins=180, bev='coffee')
+    cm_obj = CaffeineMonitor(*pytesting_files_scratch, True, nmspc)
+    cm_obj.read_file()  # loads cm.data_dict from file
+    assert cm_obj.data_dict['level'] == 0.0
+    assert cm_obj.data_dict['time'] == datetime.now().strftime('%Y-%m-%d_%H:%M')
+    cm_obj.mg_to_add = 200
+    cm_obj.mins_ago = 0
+    cm_obj.decay_before_add()
+    assert cm_obj.mg_to_add == 200
 
 
 def test_add_caffeine(test_files, nmsp):
