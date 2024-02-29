@@ -139,8 +139,6 @@ def test_decay_before_add_0_mins_elapsed(pytesting_files_scratch):
     assert cm_obj.mg_to_add == 200
 
 
-# TODO: WE ARE HERE !!!
-
 def test_decay_before_add_mins_ago_zero(pytesting_files_scratch):
     """Test decay_before_add() when mins_ago is 0."""
     nmspc = Namespace(mg=100, mins=0, bev='coffee')
@@ -185,6 +183,7 @@ def test_str(pytesting_files_scratch):
     assert str(cm_obj) == 'Caffeine level is 48.0 mg at time 2020-04-01_12:51'
 
 
+@pytest.mark.skip(reason="test sub-method calls separately")
 def test_main(pytesting_files_scratch):
     """
     Test the main() method of the CaffeineMonitor class.

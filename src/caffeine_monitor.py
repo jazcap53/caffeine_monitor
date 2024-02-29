@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import json
 import logging
 
-from src.utils import set_up
+from caffeine_monitor.src.utils import set_up
 
 
 COFFEE_MINS_DECREMENT = 15
@@ -24,9 +24,9 @@ class CaffeineMonitor:
 
     def __init__(self, logfile, iofile, iofile_future, first_run, ags):
         """
-        :param logfile: a Path object
-        :param iofile: a Path object
-        :param iofile_future: a Path object
+        :param logfile: an opened file handle
+        :param iofile: an opened file handle
+        :param iofile_future: an opened file handle
         :param ags: an argparse.Namespace object with .mg as the amount
                     of caffeine consumed, .mins as how long ago the
                     caffeine was consumed, and .bev as the beverage
@@ -44,6 +44,8 @@ class CaffeineMonitor:
         self.log_line_one = ''
         self.first_run = first_run
         self._curr_time = datetime.today()
+        self.log_contents = ()
+
 
     def main(self):
         """Driver"""
@@ -70,7 +72,24 @@ class CaffeineMonitor:
         print(self)
 
     def read_log(self):
-        pass
+        try:
+            log_file = self.logfile
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Log file {self.logfile} not found.")
+
+        first_line = ''
+        last_line = ''
+        num_lines = 0
+        for log_line in log_file:
+            num_lines += 1
+            if not first_line:
+                first_line = log_line.strip()
+            last_line = log_line.strip()
+
+        if num_lines == 1:
+            last_line = ''
+
+        self.log_contents = (first_line, last_line, num_lines)
 
     def read_file(self):
         """Read initial time and caffeine level from file"""
