@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import json
 import logging
 
-from caffeine_monitor.src.utils import set_up
+from src.utils import set_up
 
 
 COFFEE_MINS_DECREMENT = 15
@@ -46,7 +46,6 @@ class CaffeineMonitor:
         self._curr_time = datetime.today()
         self.log_contents = ()
 
-
     def main(self):
         """Driver"""
         self.read_log()  # a no-op
@@ -72,21 +71,16 @@ class CaffeineMonitor:
         print(self)
 
     def read_log(self):
-        try:
-            log_file = self.logfile
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Log file {self.logfile} not found.")
-
         first_line = ''
         last_line = ''
         num_lines = 0
-        for log_line in log_file:
+        for log_line in self.logfile:
             num_lines += 1
             if not first_line:
                 first_line = log_line.strip()
             last_line = log_line.strip()
 
-        if num_lines == 1:
+        if 0 <= num_lines < 2:
             last_line = ''
 
         self.log_contents = (first_line, last_line, num_lines)
@@ -150,7 +144,7 @@ class CaffeineMonitor:
         if amt_to_decay is None:
             amt_to_decay = self.mg_to_add
 
-        old_time = self.curr_time - timedelta(minutes=self.mins_ago)  #TODO: '+' or '-' here
+        old_time = self.curr_time - timedelta(minutes=self.mins_ago)  # TODO: '+' or '-' here
         minutes_elapsed = (self.curr_time - old_time) / timedelta(minutes=1)
         net_change = (amt_to_decay *
                       pow(0.5, (minutes_elapsed / self.half_life)))
@@ -180,8 +174,8 @@ class CaffeineMonitor:
         """
         Called by: main()
         """
-        # drink 65% now, 25% after SODA_MINS_DECRMENT minutes,
-        # remaining 10% after another SODA_MINS_DECRMENT minutes
+        # drink 65% now, 25% after SODA_MINS_DECREMENT minutes,
+        # remaining 10% after another SODA_MINS_DECREMENT minutes
         soda_amt = self.mg_to_add
 
         first_amt = soda_amt * 0.65

@@ -12,7 +12,7 @@ from caffeine_monitor.src.caffeine_monitor import CaffeineMonitor
 
 def test_can_make_caffeine_monitor_instance(pytesting_files):
     """
-    Check
+    Check CaffeineMonitor ctor makes instance
     """
     nmspc = Namespace(mg=100, mins=180, bev='coffee')
     cm_obj = CaffeineMonitor(*pytesting_files, True, nmspc)
@@ -181,6 +181,16 @@ def test_str(pytesting_files_scratch):
     cm_obj.data_dict['level'] = 48.0
     cm_obj.data_dict['time'] = datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')
     assert str(cm_obj) == 'Caffeine level is 48.0 mg at time 2020-04-01_12:51'
+
+
+def test_read_log(pytesting_files_scratch):
+    nmspc = Namespace(mg=100, mins=0, bev='soda')
+    cm_obj = CaffeineMonitor(*pytesting_files_scratch, True, nmspc)
+
+    cm_obj.read_log()
+    assert cm_obj.log_contents[0] == 'Start of log file'
+    assert cm_obj.log_contents[1] != cm_obj.log_contents[0]
+    assert cm_obj.log_contents[2] == 1
 
 
 @pytest.mark.skip(reason="test sub-method calls separately")

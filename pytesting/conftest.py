@@ -3,9 +3,7 @@
 import json
 from datetime import datetime
 import pytest
-from caffeine_monitor.src.caffeine_monitor import CaffeineMonitor
 from caffeine_monitor.src.utils import read_config_file, set_up
-from argparse import Namespace
 from pathlib import Path
 
 
@@ -70,6 +68,8 @@ def pytesting_files_scratch():
     with (log_filename_scratch.open('w+') as log_file_scr,
           json_filename_scratch.open('w+') as json_filename_scr,
           json_future_filename_scratch.open('w+') as json_future_filename_scr):
+        log_file_scr.write('Start of log file')
+        log_file_scr.seek(0)
         parsed_now = datetime.now().strftime('%Y-%m-%d_%H:%M')
         empty_args = {'time': parsed_now, 'level': 0.0}
         json.dump(empty_args, json_filename_scr)
@@ -79,34 +79,8 @@ def pytesting_files_scratch():
         yield log_file_scr, json_filename_scr, json_future_filename_scr
 
 
-# @pytest.fixture(scope='function')
-# def test_files(tmpdir, fake_file):
-#     log_file = fake_file
-#     json_file = fake_file
-#     json_future_file = fake_file
-#     a_datetime = datetime(2020, 4, 1, 12, 51)
-#     fmt_a_datetime = a_datetime.strftime('%Y-%m-%d_%H:%M')
-#     json_data = {"time": fmt_a_datetime, "level": 48.0}
-#     json_file.content = json.dumps(json_data)
-#     return log_file, json_file, json_future_file
-
-
-# @pytest.fixture
-# def cm_obj(pytesting_files, request, mg=0, mins=0, bev='coffee'):
-#     log_file, json_file, json_future_file = pytesting_files
-#     args = Namespace(mg=mg, mins=mins, bev=bev)
-#
-#     cm = CaffeineMonitor(log_file, json_file, json_future_file, True, args)
-#     yield cm
-
-
-# @pytest.fixture
-# def nmsp():
-#     return Namespace(mg=100, mins=180, bev='coffee')
-
-
 # ==============
-# SAVING FOR (possible, unlikely) USE IN TESTS
+# SAVING FOR (possible) USE IN TESTS
 
 # @pytest.mark.parametrize('cm', [
 #     Namespace(mg=100, mins=20, bev='coffee'),
