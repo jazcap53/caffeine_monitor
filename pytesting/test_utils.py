@@ -59,7 +59,20 @@ def test_parse_valid_args_v2(ags):
     assert nmspc.bev == c
 
 
+@pytest.mark.parametrize(
+    'mg, mins, bev, param_id',
+    [
+        pytest.param(0, 0, 'coffee', 'zero_mg_zero_mins_coffee'),
+        pytest.param(0, 0, 'soda', 'zero_mg_zero_mins_soda'),
+        pytest.param(100, 20, 'coffee', 'hundred_mg_twenty_mins_coffee')
+    ]
+)
+def test_parse_valid_args_v3(mg, mins, bev, param_id):
+    namespace = parse_args([str(mg), str(mins), '--bev', bev])
 
+    assert namespace.mg == mg
+    assert namespace.mins == mins
+    assert namespace.bev == bev
 
 
 @pytest.mark.parametrize('ags', [

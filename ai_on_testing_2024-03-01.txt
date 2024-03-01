@@ -2,7 +2,7 @@ Here are a few things I noticed in the test code that could be improved:
 
 - The `test_parse_args()` test doesn't actually test anything - it just calls `parse_args()`
 and then asserts that an attribute doesn't exist. This test doesn't provide any useful
-validation.
+validation.    # REMOVED
 
 - The `test_check_which_environment_unset()`, `test_check_which_environment_set_pytesting()`,
 etc tests are just testing implementation details. It would be better to test the actual behavior
@@ -85,7 +85,7 @@ def test_parse_valid_args_v2(ags):
     assert nmspc.bev == c
 ```
 
-(ignoring the parametrization for the moment), is that more like what your are suggesting?
+(ignoring the parametrization for the moment), is that more like what you are suggesting?
 
 -------------------
 
