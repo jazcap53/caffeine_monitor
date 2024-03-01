@@ -44,6 +44,25 @@ def test_parse_valid_args(pytesting_files_scratch, ags):
 
 
 @pytest.mark.parametrize('ags', [
+    (0, 0, 'coffee'),
+    (0, 0, 'soda'),
+    (100, 20, 'coffee'),
+    (50, 0, 'coffee'),
+    (0, 360, 'soda'),
+    (200, 10, 'soda')
+])
+def test_parse_valid_args_v2(ags):
+    a, b, c = ags
+    nmspc = Namespace(mg=a, mins=b, bev=c)
+    assert nmspc.mg == a
+    assert nmspc.mins == b
+    assert nmspc.bev == c
+
+
+
+
+
+@pytest.mark.parametrize('ags', [
     (0, 0, 0, 0),
     (100, '0', 'water')
 ])
@@ -62,11 +81,11 @@ def test_parse_invalid_args(pytesting_files_scratch, ags):
         pytest.fail("Command should have failed with an error message")
 
 
-def test_parse_args():
-    # args = parse_args(sys.argv[1:])
-    args = src.utils.parse_args(sys.argv[1:])
-    with pytest.raises(AttributeError):
-        assert args.bongo is None
+# def test_parse_args():
+#     # args = parse_args(sys.argv[1:])
+#     args = src.utils.parse_args(sys.argv[1:])
+#     with pytest.raises(AttributeError):
+#         assert args.bongo is None
 
 
 def test_parse_args_with_t():

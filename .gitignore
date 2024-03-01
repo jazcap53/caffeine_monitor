@@ -5,6 +5,7 @@ __pycache__
 .idea/
 *.bak
 *.txt
+!ai_on_testing*.txt
 !requirements.txt
 *.json*
 caff
