@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 @pytest.fixture
-def fake_file():
+def fake_file():  # Not presently in use
     class FakeFile:
         def __init__(self, initial_content=''):
             self.content = initial_content
@@ -77,6 +77,12 @@ def pytesting_files_scratch():
         json.dump({}, json_future_filename_scr)
         json_future_filename_scr.seek(0)
         yield log_file_scr, json_filename_scr, json_future_filename_scr
+
+
+# @pytest_fixture(scope='function')
+# def ags():
+#     pass
+
 
 
 # ==============

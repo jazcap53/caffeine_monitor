@@ -48,7 +48,7 @@ class CaffeineMonitor:
 
     def main(self):
         """Driver"""
-        self.read_log()  # a no-op
+        self.read_log()
         self.read_file()  # sets self.data_dict
         self.read_future_file()  # sets self.future_list
         if not self.first_run:

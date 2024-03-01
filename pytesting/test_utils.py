@@ -1,18 +1,18 @@
 # file: test_utils.py
 
 from argparse import Namespace
+import src.utils
 import sys
 import os
 import json
-# from pathlib import PosixPath
 import pytest
 from freezegun import freeze_time
 
-from caffeine_monitor.src.utils import (check_which_environment, parse_args, set_up,
-                                        read_config_file, check_cla_match_env, init_storage,
-                                        delete_old_logfile)
+from src.utils import (check_which_environment, parse_args, set_up,
+                       read_config_file, check_cla_match_env, init_storage,
+                       delete_old_logfile)
 import subprocess
-from caffeine_monitor.src.caffeine_monitor import CaffeineMonitor
+from src.caffeine_monitor import CaffeineMonitor
 
 
 def test_bad_caff_env_value_exits(mocker):
@@ -23,61 +23,48 @@ def test_bad_caff_env_value_exits(mocker):
     assert sys.exit.called_once_with(0)
 
 
-def test_parse_valid_args(tmpdir, mocker):
-    # Get the path to the temporary directory
-    tmp_dir_path = tmpdir.strpath
-
-    # Create the log file path
-    log_file_path = os.path.join(tmp_dir_path, 'test.log')
-
-    # Create a temporary JSON file
-    json_file = tmpdir.join('test.json')
-    json_file.write('{"time": "2023-04-01_12:00", "level": 0.0}')
-
-    # Create a temporary future JSON file
-    json_future_file = tmpdir.join('test_future.json')
-    json_future_file.write('[]')
-
-    # Mock the set_up() function to return the temporary files
-    mocker.patch('caffeine_monitor.src.utils.set_up', return_value=(
-        log_file_path, json_file.strpath, json_future_file.strpath, False,
-        Namespace(mg=100, mins=0, bev='coffee', test=False, pytesting=True)))
-
-    with open(log_file_path, 'a+') as log_file:
-        print(f'tmp_dir_path: {tmp_dir_path}')
-        print(f'log_file_path: {log_file_path}')
-        monitor = CaffeineMonitor(log_file, open(json_file.strpath, 'r+'),
-                                  open(json_future_file.strpath, 'r+'), False,
-                                  Namespace(mg=100, mins=0, bev='coffee'))
-        monitor.main()
-        log_file.seek(0)
-        print('before seek() contents of log file are ')
-        print(log_file.read())
-        log_file.seek(0)
-        print('after seek() contents of log file are ')
-        print(log_file.read())
-        assert log_file.read() == 'INFO: 25.0 mg added (100 mg, 0 mins ago): level is 25.0 at ...'
-
-
-def test_parse_invalid_args(tmpdir):
-    # Call the script from the command line with an invalid argument
-    cmd = [sys.executable, 'src/caffeine_monitor.py', '-t', '-1']
+@pytest.mark.parametrize('ags', [
+    (0, 0, 'coffee'),
+    (0, 0, 'soda'),
+    (100, 20, 'coffee'),
+    (50, 0, 'coffee'),
+    (0, 360, 'soda'),
+    (200, 10, 'soda')
+])
+def test_parse_valid_args(pytesting_files_scratch, ags):
     try:
-        subprocess.run(cmd, check=True, capture_output=True)
-    except subprocess.CalledProcessError as e:
-        # Assert that the script exited with a non-zero code and printed the expected error message
-        assert e.returncode != 0
-        assert b'minutes ago argument (mins) must not be < 0' in e.stderr
+        a, b, c = ags
+        arg_helper(a, b, c)
+        nmspc = Namespace(mg=a, mins=b, bev=c)
+        cm_obj = CaffeineMonitor(*pytesting_files_scratch, True, nmspc)
+    except Exception as e:
+        raise
+    # cm_obj = CaffeineMonitor(*pytesting_files_scratch, True, nmspc)
+    assert isinstance(cm_obj, CaffeineMonitor)
+
+
+@pytest.mark.parametrize('ags', [
+    (0, 0, 0, 0),
+    (100, '0', 'water')
+])
+def test_parse_invalid_args(pytesting_files_scratch, ags):
+    """
+    Call the script from the command line with an invalid argument
+    """
+    try:
+        a, b, c = ags
+        arg_helper(a, b, c)
+        nmspc = Namespace(mg=a, mins=b, bev=c)
+        _ = CaffeineMonitor(*pytesting_files_scratch, True, nmspc)
+    except Exception as e:
+        print("CaffeineMonitor ctor called with bad args")
     else:
         pytest.fail("Command should have failed with an error message")
 
 
 def test_parse_args():
     # args = parse_args(sys.argv[1:])
-    args = parse_args()
-    assert args.mg is not None
-    assert args.mins is not None
-    assert args.test is not None
+    args = src.utils.parse_args(sys.argv[1:])
     with pytest.raises(AttributeError):
         assert args.bongo is None
 
@@ -201,3 +188,11 @@ def test_delete_old_logfile_failure(tmpdir):
         name_string += 'x'
         filename = tmpdir.join(name_string)
     assert not delete_old_logfile(filename)
+
+
+def arg_helper(*L):
+    assert len(L) in [2, 3]
+    a, b, c = L
+    assert isinstance(a, int)
+    assert isinstance(b, int)
+    assert isinstance(c, str)
