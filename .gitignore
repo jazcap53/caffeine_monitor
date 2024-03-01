@@ -12,3 +12,4 @@ caff
 *_backup/
 sandbox/
 holding/
+*.old
