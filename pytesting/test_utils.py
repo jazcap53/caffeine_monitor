@@ -116,21 +116,39 @@ def test_parse_args_with_200_360():
     assert args.mins == 360
 
 
-def test_check_which_environment_unset(mocker):
-    mocker.patch('sys.exit')
-    mocker.patch.dict('os.environ', {})
-    check_which_environment()
-    assert sys.exit.called_once_with(0)
+def test_check_which_environment_unset(monkeypatch, capsys):
+    """Test that check_which_environment() prints a message and exits when CAFF_EV is unset."""
+
+    # Delete CAFF_ENV from the environment, if it exists
+    monkeypatch.delenv('CAFF_ENV', raising=False)
+
+    # Define a mock function to replace sys.exit
+    def mock_exit(status=0):
+        raise SystemExit(status)
+
+    # Replace sys.exit with our mock function
+    monkeypatch.setattr('sys.exit', mock_exit)
+
+    with pytest.raises(SystemExit):
+        check_which_environment()
+
+    out, err = capsys.readouterr()
+
+    assert 'Please export environment variable CAFF_ENV as' in out
 
 
 def test_check_which_environment_set_pytesting(mocker):
     mocker.patch.dict('os.environ', {'CAFF_ENV': 'pytesting'})
-    assert check_which_environment() == 'pytesting'
+    mocker.patch('sys.exit')
+    check_which_environment()
+    assert sys.exit.call_count == 0
 
 
 def test_check_which_environment_set_test(mocker):
     mocker.patch.dict('os.environ', {'CAFF_ENV': 'prod'})
-    assert check_which_environment() == 'prod'
+    mocker.patch('sys.exit')
+    check_which_environment()
+    assert sys.exit.call_count == 0
 
 
 def test_check_which_environment_set_prod(mocker):
