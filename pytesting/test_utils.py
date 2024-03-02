@@ -137,28 +137,18 @@ def test_check_which_environment_unset(monkeypatch, capsys):
     assert 'Please export environment variable CAFF_ENV as' in out
 
 
-def test_check_which_environment_set_pytesting(mocker):
-    mocker.patch.dict('os.environ', {'CAFF_ENV': 'pytesting'})
+@pytest.mark.parametrize('env', ['pytesting', 'prod', 'test'])
+def test_check_which_environment_set(mocker, env):
+    mocker.patch.dict('os.environ', {'CAFF_ENV': env})
     mocker.patch('sys.exit')
-    check_which_environment()
+    assert check_which_environment() == env
     assert sys.exit.call_count == 0
-
-
-def test_check_which_environment_set_test(mocker):
-    mocker.patch.dict('os.environ', {'CAFF_ENV': 'prod'})
-    mocker.patch('sys.exit')
-    check_which_environment()
-    assert sys.exit.call_count == 0
-
-
-def test_check_which_environment_set_prod(mocker):
-    mocker.patch.dict('os.environ', {'CAFF_ENV': 'test'})
-    assert check_which_environment() == 'test'
 
 
 def test_set_up_with_q(mocker):
     mocker.patch('sys.argv')
     sys.argv = ['pytest', '0', '0', '-q']
+    mocker.patch.dict('os.environ', {'CAFF_ENV': 'pytesting'})  # Set the environment variable
     log_filename, json_filename, json_future_filename, first_run, args = set_up()
     assert str(log_filename) == 'pytesting/caff_pytesting.log'
     assert str(json_filename) == 'pytesting/caff_pytesting.json'
