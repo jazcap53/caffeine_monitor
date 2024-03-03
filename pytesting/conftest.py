@@ -3,6 +3,7 @@
 import json
 from datetime import datetime
 import pytest
+from pytest_mock import MockerFixture
 from caffeine_monitor.src.utils import read_config_file, set_up
 from pathlib import Path
 
@@ -69,15 +70,27 @@ def config_mocked(mocker):
     mocker.patch('caffeine_monitor.src.utils.read_config_file', return_value=config_mock)
 
 
-def files_mocked(mocker):
-    log_mock = mocker.mock_open(read_data='Start of log file')
-    json_mock = mocker.mock_open(read_data='{"time": "2020-01-01_00:00", "level": 0.0}')
-    future_json_mock = mocker.mock_open(read_data='[]')
+@pytest.fixture
+def files_mocked(mocker: MockerFixture):
+    # Mock the open function
+    # For the log file
+    open_mock = mocker.patch('builtins.open', new_callable=mocker.mock_open, read_data='Start of log file')
 
-    mocker.patch('builtins.open', side_effect=[log_mock.return_value, json_mock.return_value, future_json_mock.return_value])
+    # Mock the json.load function
+    json_load_mock = mocker.patch('json.load')
+    json_load_mock.side_effect = [
+        # for read_file
+        lambda: {"time": datetime.datetime.now().strftime("%Y-%m-%d_%H:%M"), "level": 0.0},
+        # for read_future_file
+        lambda: []
+    ]
 
-    log_mock.return_value.seek(0)
-    json_mock.return_value.configure_mock(**{'write.return_value': None})
-    future_json_mock.return_value.configure_mock(**{'write.return_value': None})
+    # Set up the return values for the mocked open function
+    open_mock.side_effect = [
+        mocker.DEFAULT,  # For the log file
+        mocker.DEFAULT,  # For read_file
+        mocker.DEFAULT,  # For read_future_file
+    ]
 
-    return log_mock, json_mock, future_json_mock
+    return open_mock, json_load_mock
+
