@@ -10,6 +10,17 @@ import pytest
 from caffeine_monitor.src.caffeine_monitor import CaffeineMonitor
 
 
+def test_can_make_caffeine_monitor_instance_mocked(pytesting_files_scratch_mocked):
+    """
+    Check CaffeineMonitor ctor makes instance
+    """
+    nmspc = Namespace(mg=100, mins=180, bev='coffee')
+    cm_obj = CaffeineMonitor(*pytesting_files_scratch_mocked, True, nmspc)
+    assert isinstance(cm_obj, CaffeineMonitor)
+    assert cm_obj.mg_to_add == 100
+    assert cm_obj.mins_ago == 180
+
+
 def test_can_make_caffeine_monitor_instance(pytesting_files):
     """
     Check CaffeineMonitor ctor makes instance

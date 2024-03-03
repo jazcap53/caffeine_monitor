@@ -7,45 +7,7 @@ from caffeine_monitor.src.utils import read_config_file, set_up
 from pathlib import Path
 
 
-@pytest.fixture
-def fake_file():  # Not presently in use
-    class FakeFile:
-        def __init__(self, initial_content=''):
-            self.content = initial_content
-            self.position = 0
-
-        def read(self, size=None):
-            if size is None:
-                result = self.content[self.position:]
-                self.position = len(self.content)
-            else:
-                result = self.content[self.position:self.position + size]
-                self.position += size
-            return result
-
-        def write(self, data):
-            self.content += data
-
-        def seek(self, offset, whence=0):
-            if whence == 0:
-                self.position = offset
-            elif whence == 1:
-                self.position += offset
-            elif whence == 2:
-                self.position = len(self.content) + offset
-
-        def truncate(self, size=0):
-            self.content = self.content[:size]
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            pass
-
-    return FakeFile()
-
-
+# TODO: PHASE OUT THIS FIXTURE
 @pytest.fixture(scope='session')
 def pytesting_files():
     config = read_config_file('src/caffeine.ini')
@@ -58,6 +20,7 @@ def pytesting_files():
         yield log_file, json_file, json_future_file
 
 
+# TODO: PHASE OUT THIS FIXTURE
 @pytest.fixture(scope='function')
 def pytesting_files_scratch():
     config = read_config_file('src/caffeine.ini')
@@ -79,16 +42,42 @@ def pytesting_files_scratch():
         yield log_file_scr, json_filename_scr, json_future_filename_scr
 
 
-# @pytest_fixture(scope='function')
-# def ags():
-#     pass
+# TODO: BREAK INTO 2 FIXTURES, 1 THAT MOCKS THE .INI FILE AND 1 THAT YIELDS MOCKED FILES ???
+@pytest.fixture
+def pytesting_files_scratch_mocked(mocker):
+    # Mock the config
+    config_mock = {'pytesting': {'log_file': 'mock_log.log', 'json_file': 'mock.json', 'json_file_future': 'mock_future.json'}}
+    mocker.patch('caffeine_monitor.src.utils.read_config_file', return_value=config_mock)
+
+    log_mock = mocker.mock_open(read_data='Start of log file')
+    json_mock = mocker.mock_open(read_data='{"time": "2020-01-01_00:00", "level": 0.0}')
+    future_json_mock = mocker.mock_open(read_data='[]')
+
+    mocker.patch('builtins.open', side_effect=[log_mock.return_value, json_mock.return_value, future_json_mock.return_value])
+
+    log_mock.return_value.seek(0)
+    json_mock.return_value.configure_mock(**{'write.return_value': None})
+    future_json_mock.return_value.configure_mock(**{'write.return_value': None})
+
+    return log_mock, json_mock, future_json_mock
 
 
+@pytest.fixture
+def config_mocked(mocker):
+    config_mock = {'pytesting': {'log_file': 'mock_log.log', 'json_file': 'mock.json',
+                                 'json_file_future': 'mock_future.json'}}
+    mocker.patch('caffeine_monitor.src.utils.read_config_file', return_value=config_mock)
 
-# ==============
-# SAVING FOR (possible) USE IN TESTS
 
-# @pytest.mark.parametrize('cm', [
-#     Namespace(mg=100, mins=20, bev='coffee'),
-#     Namespace(mg=200, mins=10, bev='soda'),
-# ], indirect=True)
+def files_mocked(mocker):
+    log_mock = mocker.mock_open(read_data='Start of log file')
+    json_mock = mocker.mock_open(read_data='{"time": "2020-01-01_00:00", "level": 0.0}')
+    future_json_mock = mocker.mock_open(read_data='[]')
+
+    mocker.patch('builtins.open', side_effect=[log_mock.return_value, json_mock.return_value, future_json_mock.return_value])
+
+    log_mock.return_value.seek(0)
+    json_mock.return_value.configure_mock(**{'write.return_value': None})
+    future_json_mock.return_value.configure_mock(**{'write.return_value': None})
+
+    return log_mock, json_mock, future_json_mock
