@@ -1,7 +1,7 @@
 # file: test_caffeine_monitor.py
 
 from argparse import Namespace
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, MINYEAR
 
 from freezegun import freeze_time
 import json
@@ -14,9 +14,9 @@ def test_can_make_caffeine_monitor_instance_mocked(files_mocked):
     """
     Check CaffeineMonitor ctor makes instance
     """
-    open_mock, json_load_mock = files_mocked
+    open_mock, json_load_mock, json_dump_mock = files_mocked
     nmspc = Namespace(mg=100, mins=180, bev='coffee')
-    cm_obj = CaffeineMonitor(open_mock(), json_load_mock(), json_load_mock(), True, nmspc)
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
     assert isinstance(cm_obj, CaffeineMonitor)
     assert cm_obj.mg_to_add == 100
     assert cm_obj.mins_ago == 180
@@ -26,9 +26,9 @@ def test_can_make_caffeine_monitor_instance(files_mocked):
     """
     Check CaffeineMonitor ctor makes instance
     """
-    open_mock, json_load_mock = files_mocked
+    open_mock, json_load_mock, json_dump_mock = files_mocked
     nmspc = Namespace(mg=100, mins=180, bev='coffee')
-    cm_obj = CaffeineMonitor(open_mock(), json_load_mock(), json_load_mock(), True, nmspc)
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
     assert isinstance(cm_obj, CaffeineMonitor)
     assert cm_obj.mg_to_add == 100
     assert cm_obj.mins_ago == 180
@@ -39,8 +39,8 @@ def test_read_file(files_mocked):
     Check read_file() sets data_dict values
     """
     nmspc = Namespace(mg=100, mins=180, bev='coffee')
-    open_mock, json_load_mock = files_mocked
-    cm_obj = CaffeineMonitor(open_mock(), json_load_mock, json_load_mock, True, nmspc)
+    open_mock, json_load_mock, json_dump_mock = files_mocked
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
     assert(isinstance(cm_obj, CaffeineMonitor))
     assert cm_obj.data_dict == {}
     cm_obj.read_file()
@@ -48,13 +48,14 @@ def test_read_file(files_mocked):
     assert cm_obj.data_dict['time'] == datetime.now().strftime('%Y-%m-%d_%H:%M')
 
 
-def test_write_file_add_mg(pytesting_files, caplog):
+def test_write_file_add_mg(files_mocked, caplog):
     """
     Check add_caffeine() adds mg_net_change
     Check add_caffeine() writes correct value to log
     """
     nmspc = Namespace(mg=140, mins=0, bev='coffee')
-    cm_obj = CaffeineMonitor(*pytesting_files, True, nmspc)
+    open_mock, json_load_mock, json_dump_mock = files_mocked
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
     cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
     orig_level = 100.0
 
@@ -68,12 +69,13 @@ def test_write_file_add_mg(pytesting_files, caplog):
     assert len(caplog.records) == 1
 
 
-def test_add_no_mg_not_write_log(pytesting_files, caplog):
+def test_add_no_mg_not_write_log(files_mocked, caplog):
     """
     Check adding 0 mg does not write to log
     """
     nmspc = Namespace(mg=0, mins=0, bev='coffee')
-    cm_obj = CaffeineMonitor(*pytesting_files, True, nmspc)
+    open_mock, json_load_mock, json_dump_mock = files_mocked
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
     cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
     cm_obj.data_dict = {'level': 200.0, 'time': cur_time}
     assert cm_obj.mg_to_add == 0.0
@@ -84,27 +86,29 @@ def test_add_no_mg_not_write_log(pytesting_files, caplog):
     assert len(caplog.records) == 0
 
 
-def test_add_no_mg_updates_time(pytesting_files):
+# TODO: FAILING
+def test_add_no_mg_updates_time(files_mocked):
     """
-    Check adding no mg updates caff_test.json
+    Check adding no mg updates the time in caff_test.json
     """
     nmspc = Namespace(mg=0, mins=0, bev='coffee')
-    caff_test_json_file = pytesting_files[1]
-    caff_test_json_file.seek(0)
-    caff_test_json_file.truncate(0)
-    initial_data = {"time": "2020-04-01_12:51", "level": 50.0}
-    json.dump(initial_data, caff_test_json_file)
-    caff_test_json_file.seek(0)
-    initial_data_from_file = json.load(caff_test_json_file)
-    assert initial_data_from_file == initial_data
-    cm_obj = CaffeineMonitor(*pytesting_files, False, nmspc)
-    cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
-    cm_obj.data_dict = {"time": cur_time, "level": initial_data["level"]}
-    cm_obj.write_file()
-    cm_obj.iofile.seek(0)
-    final_data_from_file = json.load(cm_obj.iofile)
-    assert final_data_from_file == {"time": cur_time, "level": initial_data["level"]}
+    open_mock, json_load_mock, json_dump_mock = files_mocked
 
+    initial_level = 50.0
+    json_load_mock.side_effect = [
+        {"time": "2020-04-01_12:51", "level": initial_level},
+        []
+    ]
+
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, False, nmspc)
+    cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
+    cm_obj.data_dict = {"time": cur_time, "level": initial_level}
+
+    expected = {"time": cur_time, "level": initial_level}
+    cm_obj.write_file()
+
+    json_dump_mock.assert_called_once_with(expected, cm_obj.iofile)
+    
 
 @pytest.mark.skip(reason="research how to test this")
 def test_decay_prev_level(test_files, nmsp):
@@ -129,36 +133,24 @@ def test_decay_prev_level(test_files, nmsp):
     freezer.stop()
 
 
-def test_decay_before_add_360_mins_elapsed(pytesting_files):
-    nmspc = Namespace(mg=100, mins=180, bev='coffee')
-    cm_obj = CaffeineMonitor(*pytesting_files, False, nmspc)
-    cm_obj.data_dict = {'level': 48.0, 'time': datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')}
-    assert cm_obj.data_dict['level'] == 48.0
-    assert cm_obj.data_dict['time'] == datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')
-    cm_obj.mg_to_add = 200
-    cm_obj.mins_ago = 360
+@pytest.mark.parametrize('mg_add, min_ago, net_ch',
+                         [(200, 360, 100),
+                          (200, 0, 200)])
+def test_decay_before_add_360_mins_elapsed(files_mocked, mg_add, min_ago, net_ch):
+    nmspc = Namespace(mg=mg_add, mins=min_ago, bev='coffee')
+    open_mock, json_load_mock, json_dump_mock = files_mocked
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, False, nmspc)
+    dummies = (0.0, datetime(1, 1, 1).strftime('%Y-%m-%d_%H:%M'))
+    cm_obj.data_dict = {'level': 0.0, 'time': datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')}
     cm_obj.decay_before_add()
-    assert cm_obj.mg_net_change == 100
-
-
-def test_decay_before_add_0_mins_elapsed(files_mocked):
-    nmspc = Namespace(mg=100, mins=180, bev='coffee')
-    open_mock, json_load_mock = files_mocked
-    cm_obj = CaffeineMonitor(open_mock(), json_load_mock, json_load_mock, True, nmspc)
-    cm_obj.read_file()  # loads cm.data_dict from file
-    assert cm_obj.data_dict['level'] == 0.0
-    assert cm_obj.data_dict['time'] == datetime.now().strftime('%Y-%m-%d_%H:%M')
-    cm_obj.mg_to_add = 200
-    cm_obj.mins_ago = 0
-    cm_obj.decay_before_add()
-    assert cm_obj.mg_to_add == 200
+    assert cm_obj.mg_net_change == net_ch
 
 
 def test_decay_before_add_mins_ago_zero(files_mocked):
     """Test decay_before_add() when mins_ago is 0."""
-    open_mock, json_load_mock = files_mocked
+    open_mock, json_load_mock, json_dump_mock = files_mocked
     nmspc = Namespace(mg=100, mins=0, bev='coffee')
-    cm_obj = CaffeineMonitor(open_mock(), json_load_mock, json_load_mock, True, nmspc)
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
     cm_obj.data_dict = {"time": "2020-04-01_12:51", "level": 48.0}
 
     cm_obj.decay_before_add()
@@ -168,9 +160,9 @@ def test_decay_before_add_mins_ago_zero(files_mocked):
 
 def test_add_caffeine(files_mocked):
     """Test add_caffeine() correctly updates data_dict['level']."""
-    open_mock, json_load_mock = files_mocked
+    open_mock, json_load_mock, json_dump_mock = files_mocked
     nmspc = Namespace(mg=100, mins=0, bev='coffee')
-    cm_obj = CaffeineMonitor(open_mock(), json_load_mock, json_load_mock, True, nmspc)
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
     cm_obj.data_dict = {"time": "2020-04-01_12:51", "level": 48.0}
     orig_level = cm_obj.data_dict['level']
     cm_obj.mg_net_change = 100.0
@@ -182,8 +174,8 @@ def test_add_caffeine(files_mocked):
 
 def test_update_time(files_mocked):
     nmspc = Namespace(mg=20, mins=20, bev='coffee')
-    open_mock, json_load_mock = files_mocked
-    cm_obj = CaffeineMonitor(open_mock(), json_load_mock, json_load_mock, True, nmspc)
+    open_mock, json_load_mock, json_dump_mock = files_mocked
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
     cm_obj.read_file()  # loads cm.data_dict from file
     cm_obj.data_dict['time'] = (datetime.now() - timedelta(days=10)).strftime('%Y-%m-%d_%H:%M')
     freezer = freeze_time('2020-05-01 11:00')
@@ -194,9 +186,9 @@ def test_update_time(files_mocked):
 
 
 def test_str(files_mocked):
-    open_mock, json_load_mock = files_mocked
+    open_mock, json_load_mock, json_dump_mock = files_mocked
     nmspc = Namespace(mg=50, mins=50, bev='soda')
-    cm_obj = CaffeineMonitor(open_mock(), json_load_mock, json_load_mock, False, nmspc)
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, False, nmspc)
     cm_obj.data_dict['level'] = 48.0
     cm_obj.data_dict['time'] = datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')
     assert str(cm_obj) == 'Caffeine level is 48.0 mg at time 2020-04-01_12:51'
@@ -204,7 +196,8 @@ def test_str(files_mocked):
 
 def test_read_log(files_mocked):
     nmspc = Namespace(mg=100, mins=0, bev='soda')
-    open_mock, json_load_mock = files_mocked
+    open_mock, json_load_mock, json_dump_mock = files_mocked
+    # open_mock below must be called; cm_obj.read_log iterates over list
     cm_obj = CaffeineMonitor(open_mock(), json_load_mock, json_load_mock, True, nmspc)
     cm_obj.read_log()
     assert cm_obj.log_contents[0] == 'Start of log file'
@@ -221,7 +214,7 @@ def test_main(files_mocked):
     accounting for the decay over time, and logs the changes appropriately.
     """
     nmspc = Namespace(mg=300, mins=360, bev='coffee')
-    open_mock, json_load_mock = files_mocked
+    open_mock, json_load_mock, json_dump_mock = files_mocked
 
     log_file, json_file, json_future_file = files_mocked
 

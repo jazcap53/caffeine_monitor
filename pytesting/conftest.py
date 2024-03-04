@@ -75,6 +75,12 @@ def files_mocked(mocker: MockerFixture):
     open_mock = mocker.patch('builtins.open', new_callable=mocker.mock_open, read_data='Start of log file')
 
     json_load_mock = mocker.patch('json.load')
+    json_dump_mock = mocker.patch('json.dump')
+
+    def json_dump_side_effect(data, file_handle):
+        file_handle.write(json.dumps(data))
+
+    json_dump_mock.side_effect = json_dump_side_effect
 
     def json_load_side_effect():
         return {"time": (dt_now := datetime.now().strftime('%Y-%m-%d_%H:%M')), "level": 0.0}
@@ -90,6 +96,7 @@ def files_mocked(mocker: MockerFixture):
         mocker.DEFAULT,  # For read_future_file
     ]
 
-    yield open_mock, json_load_mock
+    yield open_mock, json_load_mock, json_dump_mock
 
     json_load_mock.reset_mock(side_effect=True)
+    json_dump_mock.reset_mock(side_effect=True)
