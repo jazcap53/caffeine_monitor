@@ -72,25 +72,24 @@ def config_mocked(mocker):
 
 @pytest.fixture
 def files_mocked(mocker: MockerFixture):
-    # Mock the open function
-    # For the log file
     open_mock = mocker.patch('builtins.open', new_callable=mocker.mock_open, read_data='Start of log file')
 
-    # Mock the json.load function
     json_load_mock = mocker.patch('json.load')
+
+    def json_load_side_effect():
+        return {"time": (dt_now := datetime.datetime.now().strftime('%Y-%m-%d_%H:%M')), "level": 0.0}
+
     json_load_mock.side_effect = [
-        # for read_file
-        lambda: {"time": datetime.datetime.now().strftime("%Y-%m-%d_%H:%M"), "level": 0.0},
-        # for read_future_file
-        lambda: []
+        json_load_side_effect,
+        []
     ]
 
-    # Set up the return values for the mocked open function
     open_mock.side_effect = [
         mocker.DEFAULT,  # For the log file
         mocker.DEFAULT,  # For read_file
         mocker.DEFAULT,  # For read_future_file
     ]
 
-    return open_mock, json_load_mock
+    yield open_mock, json_load_mock
 
+    json_load_mock.reset_mock(side_effect=True)

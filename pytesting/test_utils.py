@@ -23,40 +23,6 @@ def test_bad_caff_env_value_exits(mocker):
     assert sys.exit.called_once_with(0)
 
 
-# @pytest.mark.parametrize('ags', [
-#     (0, 0, 'coffee'),
-#     (0, 0, 'soda'),
-#     (100, 20, 'coffee'),
-#     (50, 0, 'coffee'),
-#     (0, 360, 'soda'),
-#     (200, 10, 'soda')
-# ])
-# def test_parse_valid_args(ags):
-#     try:
-#         a, b, c = ags
-#         arg_helper(a, b, c)
-#         nmspc = Namespace(mg=a, mins=b, bev=c)
-#     except Exception as e:
-#         raise
-#     assert isinstance(nmspc, Namespace)
-#
-#
-# @pytest.mark.parametrize('ags', [
-#     (0, 0, 'coffee'),
-#     (0, 0, 'soda'),
-#     (100, 20, 'coffee'),
-#     (50, 0, 'coffee'),
-#     (0, 360, 'soda'),
-#     (200, 10, 'soda')
-# ])
-# def test_parse_valid_args_v2(ags):
-#     a, b, c = ags
-#     nmspc = Namespace(mg=a, mins=b, bev=c)
-#     assert nmspc.mg == a
-#     assert nmspc.mins == b
-#     assert nmspc.bev == c
-
-
 @pytest.mark.parametrize(
     'mg, mins, bev, param_id',
     [
