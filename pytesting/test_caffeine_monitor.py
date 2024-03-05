@@ -86,7 +86,6 @@ def test_add_no_mg_not_write_log(files_mocked, caplog):
     assert len(caplog.records) == 0
 
 
-# TODO: FAILING
 def test_add_no_mg_updates_time(files_mocked):
     """
     Check adding no mg updates the time in caff_test.json

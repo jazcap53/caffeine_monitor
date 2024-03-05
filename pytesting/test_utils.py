@@ -41,28 +41,32 @@ def test_parse_valid_args_v3(mg, mins, bev, param_id):
 
 @pytest.mark.parametrize('ags', [
     (0, 0, 0, 0),
+    (0,),
     (100, '0', 'water')
 ])
-def test_parse_invalid_args(pytesting_files_scratch, ags):
+def test_parse_invalid_args(files_mocked, ags):
     """
     Call the script from the command line with an invalid argument
     """
+    a, b, c = None, None, None
+    open_mock, json_load_mock, json_dump_mock = files_mocked
+
+    had_error = False
     try:
         a, b, c = ags
-        arg_helper(a, b, c)
+    except ValueError:
+        had_error = True
+    try:
+        arg_helper(ags)
+    except AssertionError:
+        had_error = True
+
+    if not had_error:
         nmspc = Namespace(mg=a, mins=b, bev=c)
-        _ = CaffeineMonitor(*pytesting_files_scratch, True, nmspc)
-    except Exception as e:
-        print("CaffeineMonitor ctor called with bad args")
-    else:
-        pytest.fail("Command should have failed with an error message")
-
-
-# def test_parse_args():
-#     # args = parse_args(sys.argv[1:])
-#     args = src.utils.parse_args(sys.argv[1:])
-#     with pytest.raises(AttributeError):
-#         assert args.bongo is None
+        with pytest.raises(Exception):
+            _ = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
+    else:  # We had an error, so the test should pass
+        pass
 
 
 def test_parse_args_with_t():
