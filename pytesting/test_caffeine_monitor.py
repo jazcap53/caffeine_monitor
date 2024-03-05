@@ -10,18 +10,6 @@ import pytest
 from caffeine_monitor.src.caffeine_monitor import CaffeineMonitor
 
 
-def test_can_make_caffeine_monitor_instance_mocked(files_mocked):
-    """
-    Check CaffeineMonitor ctor makes instance
-    """
-    open_mock, json_load_mock, json_dump_mock = files_mocked
-    nmspc = Namespace(mg=100, mins=180, bev='coffee')
-    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
-    assert isinstance(cm_obj, CaffeineMonitor)
-    assert cm_obj.mg_to_add == 100
-    assert cm_obj.mins_ago == 180
-
-
 def test_can_make_caffeine_monitor_instance(files_mocked):
     """
     Check CaffeineMonitor ctor makes instance
@@ -86,7 +74,6 @@ def test_add_no_mg_not_write_log(files_mocked, caplog):
     assert len(caplog.records) == 0
 
 
-# TODO: FAILING
 def test_add_no_mg_updates_time(files_mocked):
     """
     Check adding no mg updates the time in caff_test.json
@@ -240,3 +227,36 @@ def test_main(files_mocked):
     log_file.seek(0)
     log_content = log_file.read()
     assert '120.6 mg added (300 mg, 360 mins ago): level is 120.6 at 2020-04-01_18:51' in log_content
+
+
+# @pytest.mark.parametrize('caffeine_monitor_params', [
+#     {'mg': 100, 'mins': 180, 'bev': 'coffee'},
+#     {'mg': 200, 'mins': 60, 'bev': 'soda'},
+#     {'mg': 50, 'bev': 'chocolate'}
+# ], indirect=True)
+# def test_caffeine_monitor_init(caffeine_monitor, caffeine_monitor_params):
+#     assert caffeine_monitor.mg_to_add == caffeine_monitor_params.get('mg', 0)
+#     assert caffeine_monitor.mins_ago == caffeine_monitor_params.get('mins', 0)
+#     assert caffeine_monitor.beverage == caffeine_monitor_params.get('bev', 'coffee')
+
+
+# @pytest.mark.parametrize('caffeine_monitor_params', [
+#     {'mg': 100, 'mins': 180, 'bev': 'coffee'},
+#     {'mg': 200, 'mins': 60, 'bev': 'soda'},
+#     {'mg': 50, 'bev': 'chocolate'},
+# ])
+# def test_caffeine_monitor_init(caffeine_monitor, caffeine_monitor_params):
+#     assert caffeine_monitor.mg_to_add == caffeine_monitor_params['mg']
+#     assert caffeine_monitor.mins_ago == caffeine_monitor_params['mins']
+#     assert caffeine_monitor.beverage == caffeine_monitor_params['bev']
+
+
+@pytest.mark.parametrize('caffeine_monitor_params', [
+    {'mg': 100, 'mins': 180, 'bev': 'coffee'},
+    {'mg': 200, 'mins': 60, 'bev': 'soda'},
+    {'mg': 50, 'bev': 'chocolate'}
+], indirect=True)
+def test_caffeine_monitor_init(caffeine_monitor, caffeine_monitor_params):
+    assert caffeine_monitor.mg_to_add == caffeine_monitor_params.get('mg', 0)
+    assert caffeine_monitor.mins_ago == caffeine_monitor_params.get('mins', 0)
+    assert caffeine_monitor.beverage == caffeine_monitor_params.get('bev', 'coffee')

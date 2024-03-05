@@ -100,3 +100,33 @@ def files_mocked(mocker: MockerFixture):
 
     json_load_mock.reset_mock(side_effect=True)
     json_dump_mock.reset_mock(side_effect=True)
+
+
+# @pytest.fixture
+# def caffeine_monitor(request):
+#     mg = request.param.get('mg', 0)
+#     mins = request.param.get('mins', 0)
+#     bev = request.param.get('bev', 'coffee')
+#     nmspc = Namespace(mg=mg, mins=mins, bev=bev)
+#     open_mock, json_load_mock, json_dump_mock = request.getfixturevalue('files_mocked')
+#     return CaffeineMonitor(open_mock, json_load_mock, json_dump_mock, True, nmspc)
+
+
+# @pytest.fixture(autouse=True)
+# def caffeine_monitor(request):
+#     mg = request.param.get('mg', 0)
+#     mins = request.param.get('mins', 0)
+#     bev = request.param.get('bev', 'coffee')
+#     nmspc = Namespace(mg=mg, mins=mins, bev=bev)
+#     open_mock, json_load_mock, json_dump_mock = request.getfixturevalue('files_mocked')
+#     return CaffeineMonitor(open_mock, json_load_mock, json_dump_mock, True, nmspc)
+
+
+@pytest.fixture
+def caffeine_monitor(request):
+    mg = request.param['mg']
+    mins = request.param.get('mins', 0)
+    bev = request.param['bev']
+    nmspc = Namespace(mg=mg, mins=mins, bev=bev)
+    open_mock, json_load_mock, json_dump_mock = request.getfixturevalue('files_mocked')
+    return CaffeineMonitor(open_mock, json_load_mock, json_dump_mock, True, nmspc)
