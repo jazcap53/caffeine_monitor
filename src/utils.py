@@ -163,15 +163,18 @@ def set_up():
     my_logfile = Path(log_filename)
     my_file = Path(json_filename)
     my_file_future = Path(json_filename_future)
+
+    first_run = False
+
     if not my_file.is_file() or os.path.getsize(my_file) == 0:
         first_run = True
         init_storage(json_filename)
         delete_old_logfile(log_filename)  # if it exists
         init_logfile(log_filename)
+        if not my_file_future.is_file():
+            init_future(json_filename_future)
     else:
-        first_run = False
-    if not my_file_future.is_file() or os.path.getsize(my_file_future) == 0:
-        init_future(json_filename_future)
+        pass
     logging.basicConfig(filename=config[current_environment]['log_file'],
                         level=logging.INFO,
                         format='%(levelname)s: %(message)s')
