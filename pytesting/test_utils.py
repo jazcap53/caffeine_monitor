@@ -113,28 +113,6 @@ def test_check_which_environment_set(mocker, env):
     assert sys.exit.call_count == 0
 
 
-# def test_set_up_with_q(mocker):
-#     mocker.patch('sys.argv')
-#     sys.argv = ['pytest', '0', '0', '-q']
-#     mocker.patch.dict('os.environ', {'CAFF_ENV': 'pytesting'})  # Set the environment variable
-#
-#     # Patch the file existence checks
-#     mocker.patch('pathlib.Path.is_file', side_effect=[False, False])
-#
-#     log_filename, json_filename, json_future_filename, first_run, args = set_up()
-#     assert str(log_filename) == 'pytesting/caff_pytesting.log'
-#     assert str(json_filename) == 'pytesting/caff_pytesting.json'
-#     assert str(json_future_filename) == 'pytesting/caff_pytesting_future.json'
-#     assert first_run is True
-#
-#     # Restore the original file existence checks
-#     mocker.stopall()
-#
-#     # Call set_up() again with the original file existence checks
-#     log_filename, json_filename, json_future_filename, first_run, args = set_up()
-#     assert first_run is False
-
-
 def test_set_up_with_q_pytesting_env(mocker):
     mocker.patch('sys.argv', ['pytest', '0', '0', '-q'])
     mocker.patch.dict('os.environ', {'CAFF_ENV': 'pytesting'})  # Set the environment variable
@@ -148,6 +126,7 @@ def test_set_up_with_q_pytesting_env(mocker):
     assert str(json_future_filename) == 'pytesting/caff_pytesting_future.json'
     assert first_run is True
 
+
 def test_set_up_with_q_test_env(mocker):
     mocker.patch('sys.argv', ['pytest', '0', '0', '-q'])
     mocker.patch.dict('os.environ', {'CAFF_ENV': 'test'})  # Set the environment variable
@@ -157,6 +136,7 @@ def test_set_up_with_q_test_env(mocker):
     assert exc_info.type == SystemExit
     assert exc_info.value.code == 0
 
+
 def test_set_up_with_q_prod_env(mocker):
     mocker.patch('sys.argv', ['pytest', '0', '0', '-q'])
     mocker.patch.dict('os.environ', {'CAFF_ENV': 'prod'})  # Set the environment variable
@@ -165,6 +145,7 @@ def test_set_up_with_q_prod_env(mocker):
         set_up()
     assert exc_info.type == SystemExit
     assert exc_info.value.code == 0
+
 
 def test_set_up_with_t_test_env(mocker):
     mocker.patch('sys.argv', ['pytest', '0', '0', '-t'])
@@ -179,6 +160,7 @@ def test_set_up_with_t_test_env(mocker):
     assert str(json_future_filename) == 'tests/caff_test_future.json'
     assert first_run is True
 
+
 def test_set_up_with_t_prod_env(mocker):
     mocker.patch('sys.argv', ['pytest', '0', '0', '-t'])
     mocker.patch.dict('os.environ', {'CAFF_ENV': 'prod'})  # Set the environment variable
@@ -187,6 +169,7 @@ def test_set_up_with_t_prod_env(mocker):
         set_up()
     assert exc_info.type == SystemExit
     assert exc_info.value.code == 0
+
 
 def test_set_up_with_t_pytesting_env(mocker):
     mocker.patch('sys.argv', ['pytest', '0', '0', '-t'])
