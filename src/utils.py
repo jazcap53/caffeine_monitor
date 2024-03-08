@@ -36,36 +36,50 @@ def parse_args(args=None):
     if args.count('--bev') + args.count('-b') > 1:
         raise ValueError("Duplicate -b/--bev argument")
 
-    parser = argparse.ArgumentParser(description='Estimate the quantity '
-                                                 'of caffeine (in mg) in the '
-                                                 'user\'s body')
+    parser = argparse.ArgumentParser(description='Estimate the quantity of caffeine (in mg) in the user\'s body')
 
     env_group = parser.add_mutually_exclusive_group()
-    env_group.add_argument('-t', '--test', action='store_true',
-                            help='Use test environment')
-    env_group.add_argument('-q', '--pytesting', dest='pytesting', action='store_true',
-                            help='Use pytesting environment for pytest runs')
+    env_group.add_argument('-t', '--test', action='store_true', help='Use test environment')
+    env_group.add_argument('-q', '--pytesting', dest='pytesting', action='store_true', help='Use pytesting environment for pytest runs')
 
-    parser.add_argument('mg', nargs='?', type=int, default=0,
-                        help='amount of caffeine added (may be 0)')
-    parser.add_argument('mins', nargs='?', type=int, default=0,
-                        help='minutes ago caffeine was added '
-                             '(may be negative, 0, or '
-                             'omitted)')
+    parser.add_argument('mg', nargs='?', type=int, default=0, help='amount of caffeine added (may be 0)')
+    parser.add_argument('mins', nargs='?', type=int, default=0, help='minutes ago caffeine was added (may be negative, 0, or omitted)')
 
     # Parse -b/--bev separately with a default value
     bev_parser = parser.add_argument_group('beverage options')
-    bev_parser.add_argument('-b', '--bev',
-                            choices=['coffee', 'soda', 'chocolate'],
-                            default='coffee',
-                            help="beverage: 'coffee' (default), 'soda', or 'chocolate'")
+    bev_parser.add_argument('-b', '--bev', choices=['coffee', 'soda', 'chocolate'], default='coffee', help="beverage: 'coffee' (default), 'soda', or 'chocolate'")
+
+    if '-h' in args or '--help' in args:
+        parser.print_help()
+        sys.exit(0)
 
     args = parser.parse_args(args)
+
     if args.mins < 0:
         print("minutes ago argument (mins) must not be < 0")
         sys.exit(1)
 
     return args
+
+
+def create_files(log_filename, json_filename, json_future_filename):
+    first_run = False
+
+    my_file = Path(json_filename)
+    my_file_future = Path(json_future_filename)
+    my_logfile = Path(log_filename)  # TODO: obsolete ???
+
+    if not my_file.is_file() or os.path.getsize(my_file) == 0:
+        first_run = True
+        init_storage(json_filename)
+        delete_old_logfile(log_filename)  # if it exists
+        init_logfile(log_filename)
+        if not my_file_future.is_file():
+            init_future(json_future_filename)
+    else:
+        pass
+
+    return first_run
 
 
 def read_config_file(config_file):
@@ -152,30 +166,25 @@ def init_logfile(fname):
 
 
 def set_up():
-    current_environment = check_which_environment()
+    current_environment = None
+    try:
+        current_environment = check_which_environment()
+    except ValueError as e:
+        print(e)
+        sys.exit(0)
+
     args = parse_args(sys.argv[1:])
     config = read_config_file(CONFIG_FILENAME)
 
     check_cla_match_env(current_environment, args)
     json_filename = config[current_environment]['json_file']
-    json_filename_future = config[current_environment]['json_file_future']
+    json_future_filename = config[current_environment]['json_file_future']
     log_filename = config[current_environment]['log_file']
-    my_logfile = Path(log_filename)
-    my_file = Path(json_filename)
-    my_file_future = Path(json_filename_future)
 
-    first_run = False
+    first_run = create_files(log_filename, json_filename, json_future_filename)
 
-    if not my_file.is_file() or os.path.getsize(my_file) == 0:
-        first_run = True
-        init_storage(json_filename)
-        delete_old_logfile(log_filename)  # if it exists
-        init_logfile(log_filename)
-        if not my_file_future.is_file():
-            init_future(json_filename_future)
-    else:
-        pass
     logging.basicConfig(filename=config[current_environment]['log_file'],
                         level=logging.INFO,
                         format='%(levelname)s: %(message)s')
-    return my_logfile, json_filename, json_filename_future, first_run, args
+    return log_filename, json_filename, json_future_filename, first_run, args
+

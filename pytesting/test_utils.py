@@ -13,6 +13,7 @@ from src.utils import (check_which_environment, parse_args, set_up,
                        delete_old_logfile)
 import subprocess
 from src.caffeine_monitor import CaffeineMonitor
+import builtins
 
 
 def test_bad_caff_env_value_exits(mocker):
@@ -220,9 +221,16 @@ def test_check_cla_match_env_bad_02(mocker):
     sys.exit.assert_called_once_with(0)
 
 
-def test_init_storage_bad_filename_raises_oserror():
+def test_init_storage_bad_filename_raises_oserror(mocker):
+    # Patch the open function with our mocked open object
+    mock_open = mocker.patch.object(builtins, 'open', side_effect=OSError('Mock OSError'))
+
+    # Call the init_storage function, which should now raise an OSError
     with pytest.raises(OSError):
         init_storage('a/b')
+
+    # Assert that the mocked open function was called with the invalid filename
+    mock_open.assert_called_with('a/b', 'w')
 
 
 def test_init_storage_stores_good_json_file(tmpdir):
