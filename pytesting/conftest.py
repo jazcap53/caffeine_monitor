@@ -9,7 +9,7 @@ from pytest_mock import MockerFixture
 from caffeine_monitor.src.utils import read_config_file, set_up
 from pathlib import Path
 import tempfile
-from temp_file_wrapper import TempFileWrapper
+from pytesting.temp_file_wrapper import TempFileWrapper
 # TODO: introduces coupling to the sut; find another solution
 from caffeine_monitor.src.utils import read_config_file, CONFIG_FILENAME
 
@@ -25,24 +25,34 @@ def temp_log_file():
 
 
 @pytest.fixture
-def config_mocked(mocker):
-    in_mem_log_file = io.StringIO()  # TODO: CHANGE THESE TO TEMP FILES
-    in_mem_json_file = io.StringIO()
-    in_mem_json_future_file = io.StringIO()
+def config_ini_mocked(mocker):
+    temp_log_file = tempfile.NamedTemporaryFile(suffix='.log', dir=temp_dir, delete=False)
+    temp_json_file = tempfile.NamedTemporaryFile(suffix='.json', dir=temp_dir, delete=False)
+    temp_json_future_file = tempfile.NamedTemporaryFile(suffix='.json', dir=temp_dir, delete=False)
+
     config_mock = {
         'pytesting': {
-            'log_file': in_mem_log_file,
-            'json_file': in_mem_json_file,
-            'json_file_future': in_mem_json_future_file
+            'log_file': TempFileWrapper(temp_log_file),
+            'json_file': TempFileWrapper(temp_json_file),
+            'json_file_future': TempFileWrapper(temp_json_future_file)
         },
         'tests': {
-            'log_file': in_mem_log_file,
-            'json_file': in_mem_json_file,
-            'json_file_future': in_mem_json_future_file
+            'log_file': TempFileWrapper(temp_log_file),
+            'json_file': TempFileWrapper(temp_json_file),
+            'json_file_future': TempFileWrapper(temp_json_future_file)
         }
     }
+
     mocker.patch('caffeine_monitor.src.utils.read_config_file', return_value=config_mock)
+
     yield
+
+    temp_log_file.close()
+    temp_json_file.close()
+    temp_json_future_file.close()
+    os.remove(temp_log_file.name)
+    os.remove(temp_json_file.name)
+    os.remove(temp_json_future_file.name)
 
 
 @pytest.fixture
