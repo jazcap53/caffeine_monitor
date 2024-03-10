@@ -114,74 +114,6 @@ def test_check_which_environment_set(mocker, env):
     assert sys.exit.call_count == 0
 
 
-# def test_set_up_with_q_pytesting_env(mocker):
-#     mocker.patch('sys.argv', ['pytest', '0', '0', '-q'])
-#     mocker.patch.dict('os.environ', {'CAFF_ENV': 'pytesting'})  # Set the environment variable
-#
-#     # Patch the file existence checks
-#     mocker.patch('pathlib.Path.is_file', side_effect=[False, False])
-#
-#     log_filename, json_filename, json_future_filename, first_run, args = set_up()
-#     assert str(log_filename) == 'pytesting/caff_pytesting.log'
-#     assert str(json_filename) == 'pytesting/caff_pytesting.json'
-#     assert str(json_future_filename) == 'pytesting/caff_pytesting_future.json'
-#     assert first_run is True
-
-
-def test_set_up_with_q_test_env(mocker):
-    mocker.patch('sys.argv', ['pytest', '0', '0', '-q'])
-    mocker.patch.dict('os.environ', {'CAFF_ENV': 'test'})  # Set the environment variable
-
-    with pytest.raises(SystemExit) as exc_info:
-        set_up()
-    assert exc_info.type == SystemExit
-    assert exc_info.value.code == 0
-
-
-def test_set_up_with_q_prod_env(mocker):
-    mocker.patch('sys.argv', ['pytest', '0', '0', '-q'])
-    mocker.patch.dict('os.environ', {'CAFF_ENV': 'prod'})  # Set the environment variable
-
-    with pytest.raises(SystemExit) as exc_info:
-        set_up()
-    assert exc_info.type == SystemExit
-    assert exc_info.value.code == 0
-
-
-# def test_set_up_with_t_test_env(mocker):
-#     mocker.patch('sys.argv', ['pytest', '0', '0', '-t'])
-#     mocker.patch.dict('os.environ', {'CAFF_ENV': 'test'})  # Set the environment variable
-#
-#     # Patch the file existence checks
-#     mocker.patch('pathlib.Path.is_file', side_effect=[False, False])
-#
-#     log_filename, json_filename, json_future_filename, first_run, args = set_up()
-#     assert str(log_filename) == 'tests/caff_test.log'
-#     assert str(json_filename) == 'tests/caff_test.json'
-#     assert str(json_future_filename) == 'tests/caff_test_future.json'
-#     assert first_run is True
-
-
-def test_set_up_with_t_prod_env(mocker):
-    mocker.patch('sys.argv', ['pytest', '0', '0', '-t'])
-    mocker.patch.dict('os.environ', {'CAFF_ENV': 'prod'})  # Set the environment variable
-
-    with pytest.raises(SystemExit) as exc_info:
-        set_up()
-    assert exc_info.type == SystemExit
-    assert exc_info.value.code == 0
-
-
-def test_set_up_with_t_pytesting_env(mocker):
-    mocker.patch('sys.argv', ['pytest', '0', '0', '-t'])
-    mocker.patch.dict('os.environ', {'CAFF_ENV': 'pytesting'})  # Set the environment variable
-
-    with pytest.raises(SystemExit) as exc_info:
-        set_up()
-    assert exc_info.type == SystemExit
-    assert exc_info.value.code == 0
-
-
 def test_read_config_file_fake(tmpdir):
     fh = tmpdir.join("config.ini")
     fh.write('''\
@@ -201,24 +133,39 @@ log_file = tests/caff_test.log
                             'log_file': 'tests/caff_test.log'}
 
 
-def test_check_cla_match_env_bad_01(mocker):
-    mocker.patch('sys.exit')
-    args = Namespace(test=True, mg=0, mins=0)
-    test_argv = ['-t']
-    mocker.patch.object(sys, 'argv', test_argv)
-    current_environment = 'prod'
-    check_cla_match_env(current_environment, args)
-    sys.exit.assert_called_once_with(0)
+@pytest.mark.parametrize(
+    "cur_env, test_flag, pytesting_flag, expected_exit",
+    [
+        ("pytesting", False, True, False),
+        ("pytesting", True, False, True),
+        ("pytesting", False, False, True),
+        ("test", False, True, True),
+        ("test", True, False, False),
+        ("test", False, False, True),
+        ("prod", False, True, True),
+        ("prod", True, False, True),
+        ("prod", False, False, False),
+    ],
+)
+def test_check_cla_match_env(mocker, cur_env, test_flag, pytesting_flag, expected_exit):
+    args = mocker.MagicMock()
+    args.test = test_flag
+    args.pytesting = pytesting_flag
 
+    mocker.patch("sys.argv", ["script.py"])
+    if test_flag:
+        mocker.patch("sys.argv", ["script.py", "-t"])
+    elif pytesting_flag:
+        mocker.patch("sys.argv", ["script.py", "-q"])
 
-def test_check_cla_match_env_bad_02(mocker):
-    mocker.patch('sys.exit')
-    args = Namespace(test=False, mg=0, mins=0)
-    test_argv = []
-    mocker.patch.object(sys, 'argv', test_argv)
-    current_environment = 'test'
-    check_cla_match_env(current_environment, args)
-    sys.exit.assert_called_once_with(0)
+    mock_exit = mocker.patch("sys.exit")
+
+    check_cla_match_env(cur_env, args)
+
+    if expected_exit:
+        mock_exit.assert_called_once_with(0)
+    else:
+        mock_exit.assert_not_called()
 
 
 def test_init_storage_bad_filename_raises_oserror(mocker):
