@@ -18,12 +18,6 @@ config = read_config_file(CONFIG_FILENAME)
 temp_dir = os.path.dirname(config['pytesting']['log_file'])
 
 
-# @pytest.fixture(scope='session')
-# def temp_log_file():
-#     with tempfile.NamedTemporaryFile(suffix='.log') as f:
-#         yield TempFileWrapper(f)
-
-
 @pytest.fixture(scope='session')
 def temp_json_log_files():
     with tempfile.NamedTemporaryFile(suffix='.log') as log_file, \
@@ -32,73 +26,36 @@ def temp_json_log_files():
         yield TempFileWrapper(log_file), TempFileWrapper(json_file), TempFileWrapper(json_future_file)
 
 
-# @pytest.fixture
-# def config_ini_mocked(mocker):
-#     temp_log_file = tempfile.NamedTemporaryFile(suffix='.log', dir=temp_dir, delete=True)
-#     temp_json_file = tempfile.NamedTemporaryFile(suffix='.json', dir=temp_dir, delete=True)
-#     temp_json_future_file = tempfile.NamedTemporaryFile(suffix='.json', dir=temp_dir, delete=True)
-#
-#     config_mock = {
-#         'pytesting': {
-#             'log_file': TempFileWrapper(temp_log_file),
-#             'json_file': TempFileWrapper(temp_json_file),
-#             'json_file_future': TempFileWrapper(temp_json_future_file)
-#         },
-#         'tests': {
-#             'log_file': TempFileWrapper(temp_log_file),
-#             'json_file': TempFileWrapper(temp_json_file),
-#             'json_file_future': TempFileWrapper(temp_json_future_file)
-#         }
-#     }
-#
-#     mocker.patch('caffeine_monitor.src.utils.read_config_file', return_value=config_mock)
-#
-#     yield
-#
-#     # temp_log_file.close()
-#     # temp_json_file.close()
-#     # temp_json_future_file.close()
-#     # os.remove(temp_log_file.name)
-#     # os.remove(temp_json_file.name)
-#     # os.remove(temp_json_future_file.name)
+@pytest.fixture(scope='session')
+def temp_pytesting_json_log_files():
+    with (tempfile.NamedTemporaryFile(suffix='.log') as pytesting_log_file, \
+         tempfile.NamedTemporaryFile(suffix='.json') as pytesting_json_file, \
+         tempfile.NamedTemporaryFile(suffix='.json', prefix='future_') as pytesting_json_future_file):
+        yield (TempFileWrapper(pytesting_log_file), TempFileWrapper(pytesting_json_file),
+               TempFileWrapper(pytesting_json_future_file))
 
 
 @pytest.fixture(scope='session')
 def config_ini_mocked(mocker, temp_json_log_files):
-    temp_log_file, temp_json_file, temp_json_future_file = temp_json_log_files
-
-    pytesting_log_file = tempfile.NamedTemporaryFile(suffix='.log', dir='pytesting', delete=False)
-    pytesting_json_file = tempfile.NamedTemporaryFile(suffix='.json', dir='pytesting', delete=False)
-    pytesting_json_future_file = tempfile.NamedTemporaryFile(suffix='.json', dir='pytesting', delete=False, prefix='future_')
+    tests_log_file, tests_json_file, tests_json_future_file = temp_json_log_files
+    pytesting_log_file, pytesting_json_file, pytesting_json_future_file = temp_json_log_files
 
     config_mock = {
         'pytesting': {
-            'log_file': pytesting_log_file.name,
-            'json_file': pytesting_json_file.name,
-            'json_file_future': pytesting_json_future_file.name
+            'log_file': str(pytesting_log_file.name),
+            'json_file': str(pytesting_json_file.name),
+            'json_file_future': str(pytesting_json_future_file.name)
         },
         'test': {
-            'log_file': str(temp_log_file.tempfile.name),
-            'json_file': str(temp_json_file.tempfile.name),
-            'json_file_future': str(temp_json_future_file.tempfile.name)
+            'log_file': str(tests_log_file.tempfile.name),
+            'json_file': str(tests_json_file.tempfile.name),
+            'json_file_future': str(tests_json_future_file.tempfile.name)
         }
     }
 
     mocker.patch('caffeine_monitor.src.utils.read_config_file', return_value=config_mock)
 
     yield
-
-    # Clean up the temporary files
-    for temp_file in [temp_log_file, temp_json_file, temp_json_future_file]:
-        temp_file.reset()
-
-    # Clean up the pytesting temporary files
-    pytesting_log_file.close()
-    pytesting_json_file.close()
-    pytesting_json_future_file.close()
-    os.unlink(pytesting_log_file.name)
-    os.unlink(pytesting_json_file.name)
-    os.unlink(pytesting_json_future_file.name)
 
 
 @pytest.fixture
