@@ -166,14 +166,13 @@ def init_logfile(fname):
 
 
 def set_up():
-    current_environment = None
-    try:
-        current_environment = check_which_environment()
-    except ValueError as e:
-        print(e)
+    args = parse_args(sys.argv[1:])
+
+    if '-h' in sys.argv[1:] or '--help' in sys.argv[1:]:
+        print_help()
         sys.exit(0)
 
-    args = parse_args(sys.argv[1:])
+    current_environment = check_which_environment()
     config = read_config_file(CONFIG_FILENAME)
 
     check_cla_match_env(current_environment, args)
@@ -187,4 +186,3 @@ def set_up():
                         level=logging.INFO,
                         format='%(levelname)s: %(message)s')
     return log_filename, json_filename, json_future_filename, first_run, args
-
