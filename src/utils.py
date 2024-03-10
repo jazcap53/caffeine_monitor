@@ -99,26 +99,19 @@ def check_cla_match_env(cur_env, ags):
     ags.test = True if '-t' in sys.argv or '--test' in sys.argv else False
     ags.pytesting = True if '-q' in sys.argv or '--pytesting' in sys.argv else False  # Check for -q or --pytesting flag
 
+    # Note: case `args.test and args.pytesting` handled by `argparse()`
+
     if ags.pytesting:
         if cur_env != 'pytesting':
-            print("pytest run detected, but environment is not set to 'pytesting'.")
             print("Please switch to the pytesting environment with 'export CAFF_ENV=pytesting'")
             sys.exit(0)
     elif ags.test:
-        if cur_env == 'prod':
+        if cur_env != 'test':
             print("Please switch to the test environment with 'export CAFF_ENV=test'")
             sys.exit(0)
-        elif cur_env == 'pytesting':
-            print("You are in the pytesting environment, which is intended for pytest runs only.")
-            print("Please switch to the test environment with 'export CAFF_ENV=test'")
-            sys.exit(0)
-    else:  # not ags.test and not ags.q
-        if cur_env == 'test':
+    else:  # not ags.test and not ags.pytesting
+        if cur_env != 'prod':
             print("You may switch to the production environment with 'export CAFF_ENV=prod'")
-            sys.exit(0)
-        elif cur_env == 'pytesting':
-            print("You are in the pytesting environment, which is intended for pytest runs only.")
-            print("Please switch to the production environment with 'export CAFF_ENV=prod'")
             sys.exit(0)
 
 
@@ -176,6 +169,7 @@ def set_up():
     config = read_config_file(CONFIG_FILENAME)
 
     check_cla_match_env(current_environment, args)
+
     json_filename = config[current_environment]['json_file']
     json_future_filename = config[current_environment]['json_file_future']
     log_filename = config[current_environment]['log_file']
