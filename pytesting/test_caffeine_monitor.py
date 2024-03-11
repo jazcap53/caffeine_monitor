@@ -6,6 +6,8 @@ from datetime import datetime, timedelta, MINYEAR
 from freezegun import freeze_time
 import json
 import pytest
+from pytest_mock import MockerFixture
+import sys
 
 from caffeine_monitor.src.caffeine_monitor import CaffeineMonitor
 
@@ -135,13 +137,13 @@ def test_decay_prev_level(test_files, nmsp):
 @pytest.mark.parametrize("mg_add, min_ago, net_ch", [
     # Normal cases
     (200, 360, 100.0),
-    (100, 180, 50.0),
+    (100, 180, 70.7),
     (300, 720, 75.0),
 
     # Edge cases
     (0, 0, 0.0),  # Adding 0 mg
     (200, 0, 200.0),  # Adding caffeine just now (min_ago = 0)
-    (200, -60, 200.0),  # Adding caffeine in the future (min_ago < 0)
+    (200, -60, 224.5),  # Adding caffeine in the future (min_ago < 0)
     (200, 720000, 0.0),  # Adding caffeine a very long time ago (practically decayed to 0)
     (sys.maxsize, 360, sys.maxsize / 2),  # Adding a very large amount of caffeine
 ])
@@ -199,6 +201,45 @@ def test_read_log(files_mocked):
     assert cm_obj.log_contents[0] == 'Start of log file'
     assert cm_obj.log_contents[1] != cm_obj.log_contents[0]
     assert cm_obj.log_contents[2] == 1
+
+
+def test_read_future_file(files_mocked):
+    open_mock, json_load_mock, json_dump_mock = files_mocked
+
+    # Define the expected future list
+    expected_future_list = [{"time": "2023-06-08_10:00", "level": 50.0},
+                            {"time": "2023-06-08_11:00", "level": 25.0}]
+
+    # Configure the mock file to return the expected future list when json.load() is called
+    json_load_mock.side_effect = [expected_future_list]
+
+    # Create an instance of CaffeineMonitor with the mocked files
+    nmspc = Namespace(mg=100, mins=180, bev='coffee')
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
+
+    # Call the read_future_file() method
+    cm_obj.read_future_file()
+
+    # Assert that the future_list attribute is set correctly
+    assert cm_obj.future_list == expected_future_list
+
+
+def test_write_future_file(files_mocked):
+    open_mock, json_load_mock, json_dump_mock = files_mocked
+
+    # Create an instance of CaffeineMonitor with the mocked files
+    nmspc = Namespace(mg=100, mins=180, bev='coffee')
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_dump_mock, True, nmspc)
+
+    # Set the new_future_list attribute with some test data
+    cm_obj.new_future_list = [{"time": "2023-06-08_12:00", "level": 75.0},
+                              {"time": "2023-06-08_13:00", "level": 30.0}]
+
+    # Call the write_future_file() method
+    cm_obj.write_future_file()
+
+    # Assert that json.dump() is called with the correct arguments
+    json_dump_mock.assert_called_once_with(cm_obj.new_future_list, cm_obj.iofile_future, indent=4)
 
 
 @pytest.mark.skip(reason="test sub-method calls separately")

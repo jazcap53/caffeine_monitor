@@ -66,8 +66,12 @@ def files_mocked(mocker: MockerFixture):
     json_load_mock = mocker.patch('json.load')
     json_dump_mock = mocker.patch('json.dump')
 
-    def json_dump_side_effect(data, file_handle):
-        file_handle.write(json.dumps(data))
+    def json_dump_side_effect(data, file_handle, **kwargs):
+        indent = kwargs.get('indent', None)
+        if indent is not None:
+            file_handle.write(json.dumps(data, indent=indent))
+        else:
+            file_handle.write(json.dumps(data))
 
     json_dump_mock.side_effect = json_dump_side_effect
 
