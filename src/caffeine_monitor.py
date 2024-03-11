@@ -144,7 +144,8 @@ class CaffeineMonitor:
         if amt_to_decay is None:
             amt_to_decay = self.mg_to_add
 
-        old_time = self.curr_time - timedelta(minutes=self.mins_ago)  # TODO: '+' or '-' here
+        # calculate the time at which caffeine was consumed
+        old_time = self.curr_time - timedelta(minutes=self.mins_ago)
         minutes_elapsed = (self.curr_time - old_time) / timedelta(minutes=1)
         net_change = (amt_to_decay *
                       pow(0.5, (minutes_elapsed / self.half_life)))

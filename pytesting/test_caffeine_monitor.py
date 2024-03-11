@@ -132,10 +132,18 @@ def test_decay_prev_level(test_files, nmsp):
     freezer.stop()
 
 
-# TODO: come up with more test cases
 @pytest.mark.parametrize("mg_add, min_ago, net_ch", [
-    (200, 360, 100),
-    (200, 0, 200),
+    # Normal cases
+    (200, 360, 100.0),
+    (100, 180, 50.0),
+    (300, 720, 75.0),
+
+    # Edge cases
+    (0, 0, 0.0),  # Adding 0 mg
+    (200, 0, 200.0),  # Adding caffeine just now (min_ago = 0)
+    (200, -60, 200.0),  # Adding caffeine in the future (min_ago < 0)
+    (200, 720000, 0.0),  # Adding caffeine a very long time ago (practically decayed to 0)
+    (sys.maxsize, 360, sys.maxsize / 2),  # Adding a very large amount of caffeine
 ])
 def test_decay_before_add(files_mocked, mg_add, min_ago, net_ch):
     nmspc = Namespace(mg=mg_add, mins=min_ago, bev='coffee')
@@ -143,7 +151,7 @@ def test_decay_before_add(files_mocked, mg_add, min_ago, net_ch):
     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, False, nmspc)
     cm_obj.data_dict = {'level': 0.0, 'time': datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')}
     cm_obj.decay_before_add()
-    assert cm_obj.mg_net_change == net_ch
+    assert cm_obj.mg_net_change == pytest.approx(net_ch, abs=1e-6)
 
 
 def test_add_caffeine(files_mocked):
