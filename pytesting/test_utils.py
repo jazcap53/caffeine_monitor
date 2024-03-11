@@ -24,20 +24,22 @@ def test_bad_caff_env_value_exits(mocker):
     assert sys.exit.called_once_with(0)
 
 
+# TODO: we don't need such elaborate tests to check the behavior of `argparse`
 @pytest.mark.parametrize(
-    'mg, mins, bev, param_id',
+    "args, expected",
     [
-        pytest.param(0, 0, 'coffee', 'zero_mg_zero_mins_coffee'),
-        pytest.param(0, 0, 'soda', 'zero_mg_zero_mins_soda'),
-        pytest.param(100, 20, 'coffee', 'hundred_mg_twenty_mins_coffee')
-    ]
+        (["-t"], {"test": True}),
+        (["200"], {"mg": 200}),
+        (["200", "360"], {"mg": 200, "mins": 360}),
+        (["0", "0", "--bev", "coffee"], {"mg": 0, "mins": 0, "bev": "coffee"}),
+        (["0", "0", "--bev", "soda"], {"mg": 0, "mins": 0, "bev": "soda"}),
+        (["100", "20", "--bev", "coffee"], {"mg": 100, "mins": 20, "bev": "coffee"}),
+    ],
 )
-def test_parse_valid_args_v3(mg, mins, bev, param_id):
-    namespace = parse_args([str(mg), str(mins), '--bev', bev])
-
-    assert namespace.mg == mg
-    assert namespace.mins == mins
-    assert namespace.bev == bev
+def test_parse_args(args, expected):
+    parsed_args = parse_args(args)
+    for key, value in expected.items():
+        assert getattr(parsed_args, key) == value
 
 
 @pytest.mark.parametrize('ags', [
@@ -70,48 +72,25 @@ def test_parse_invalid_args(files_mocked, ags):
         pass
 
 
-def test_parse_args_with_t():
-    args = parse_args(['-t'])
-    assert args.test
+@pytest.mark.parametrize("env, expected_output", [
+    (None, "Please export environment variable CAFF_ENV as"),
+    ("pytesting", "pytesting"),
+    ("prod", "prod"),
+    ("test", "test"),
+])
+def test_check_which_environment(mocker, capsys, env, expected_output):
+    if env is None:
+        mocker.patch.dict("os.environ", {}, clear=True)
+    else:
+        mocker.patch.dict("os.environ", {"CAFF_ENV": env})
 
-
-def test_parse_args_with_200():
-    args = parse_args(['200'])
-    assert args.mg == 200
-
-
-def test_parse_args_with_200_360():
-    args = parse_args(['200', '360'])
-    assert args.mins == 360
-
-
-def test_check_which_environment_unset(monkeypatch, capsys):
-    """Test that check_which_environment() prints a message and exits when CAFF_EV is unset."""
-
-    # Delete CAFF_ENV from the environment, if it exists
-    monkeypatch.delenv('CAFF_ENV', raising=False)
-
-    # Define a mock function to replace sys.exit
-    def mock_exit(status=0):
-        raise SystemExit(status)
-
-    # Replace sys.exit with our mock function
-    monkeypatch.setattr('sys.exit', mock_exit)
-
-    with pytest.raises(SystemExit):
-        check_which_environment()
-
-    out, err = capsys.readouterr()
-
-    assert 'Please export environment variable CAFF_ENV as' in out
-
-
-@pytest.mark.parametrize('env', ['pytesting', 'prod', 'test'])
-def test_check_which_environment_set(mocker, env):
-    mocker.patch.dict('os.environ', {'CAFF_ENV': env})
-    mocker.patch('sys.exit')
-    assert check_which_environment() == env
-    assert sys.exit.call_count == 0
+    if env is None:
+        with pytest.raises(SystemExit):
+            check_which_environment()
+        out, _ = capsys.readouterr()
+        assert expected_output in out
+    else:
+        assert check_which_environment() == expected_output
 
 
 def test_read_config_file_fake(tmpdir):

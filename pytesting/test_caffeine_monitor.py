@@ -132,29 +132,18 @@ def test_decay_prev_level(test_files, nmsp):
     freezer.stop()
 
 
-@pytest.mark.parametrize('mg_add, min_ago, net_ch',
-                         [(200, 360, 100),
-                          (200, 0, 200)])
-def test_decay_before_add_360_mins_elapsed(files_mocked, mg_add, min_ago, net_ch):
+# TODO: come up with more test cases
+@pytest.mark.parametrize("mg_add, min_ago, net_ch", [
+    (200, 360, 100),
+    (200, 0, 200),
+])
+def test_decay_before_add(files_mocked, mg_add, min_ago, net_ch):
     nmspc = Namespace(mg=mg_add, mins=min_ago, bev='coffee')
     open_mock, json_load_mock, json_dump_mock = files_mocked
     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, False, nmspc)
-    dummies = (0.0, datetime(1, 1, 1).strftime('%Y-%m-%d_%H:%M'))
     cm_obj.data_dict = {'level': 0.0, 'time': datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')}
     cm_obj.decay_before_add()
     assert cm_obj.mg_net_change == net_ch
-
-
-def test_decay_before_add_mins_ago_zero(files_mocked):
-    """Test decay_before_add() when mins_ago is 0."""
-    open_mock, json_load_mock, json_dump_mock = files_mocked
-    nmspc = Namespace(mg=100, mins=0, bev='coffee')
-    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
-    cm_obj.data_dict = {"time": "2020-04-01_12:51", "level": 48.0}
-
-    cm_obj.decay_before_add()
-
-    assert cm_obj.mg_net_change == cm_obj.mg_to_add
 
 
 def test_add_caffeine(files_mocked):
