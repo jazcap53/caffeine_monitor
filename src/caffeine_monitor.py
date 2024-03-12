@@ -24,9 +24,9 @@ class CaffeineMonitor:
 
     def __init__(self, logfile, iofile, iofile_future, first_run, ags):
         """
-        :param logfile: an opened file handle
-        :param iofile: an opened file handle
-        :param iofile_future: an opened file handle
+        # :param logfile: an opened file handle
+        # :param iofile: an opened file handle
+        # :param iofile_future: an opened file handle
         :param ags: an argparse.Namespace object with .mg as the amount
                     of caffeine consumed, .mins as how long ago the
                     caffeine was consumed, and .bev as the beverage
@@ -132,6 +132,24 @@ class CaffeineMonitor:
                                                    '%Y-%m-%d_%H:%M')
         self.data_dict['level'] *= pow(0.5, (minutes_elapsed /
                                              self.half_life))
+
+    # def decay_prev_level(self):
+    #     """
+    #     Reduce stored level to account for decay since that value
+    #     was written
+    #     """
+    #     stored_time = datetime.strptime(self.data_dict['time'],
+    #                                     '%Y-%m-%d_%H:%M')
+    #     minutes_elapsed = (self.curr_time -
+    #                        stored_time) / timedelta(minutes=1)
+    #     self.data_dict['time'] = datetime.strftime(self.curr_time,
+    #                                                '%Y-%m-%d_%H:%M')
+    #
+    #     initial_level = self.data_dict['level']
+    #     decayed_level = initial_level * pow(0.5, (minutes_elapsed / self.half_life))
+    #     self.data_dict['level'] = decayed_level
+
+
 
     def decay_before_add(self, amt_to_decay=None):
         """
