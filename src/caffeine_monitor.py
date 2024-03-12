@@ -181,7 +181,7 @@ class CaffeineMonitor:
 
         first_amt = soda_amt * 0.65
         self.mg_net_change = first_amt
-        self.mins_ago = 0
+        # self.mins_ago = 0
         self.process_item()
 
         second_amt = soda_amt * 0.25

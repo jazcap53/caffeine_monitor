@@ -156,6 +156,61 @@ def test_decay_before_add(files_mocked, mg_add, min_ago, net_ch):
     assert cm_obj.mg_net_change == pytest.approx(net_ch, abs=1e-6)
 
 
+# def test_add_coffee(mocker, files_mocked):
+#     open_mock, json_load_mock, json_dump_mock = files_mocked
+#     nmspc = Namespace(mg=100, mins=180, bev='coffee')
+#     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
+#
+#     # Mock the process_item method
+#     mocker.patch.object(cm_obj, 'process_item')
+#
+#     cm_obj.add_coffee()
+#
+#     assert cm_obj.mg_net_change == 25
+#     assert cm_obj.process_item.call_count == 4
+#     assert cm_obj.mins_ago == 120
+
+
+@pytest.mark.parametrize("mg, mins, expected_mg_net_change, expected_mins_ago", [
+    (100, 180, 25, 120),    # Normal case
+    (0, 0, 0, -60),         # Edge case: 0 mg and 0 mins
+    (200, 0, 50, -60),      # Edge case: mins_ago is 0
+    (100, -30, 25, -90),    # Edge case: negative mins_ago
+])
+def test_add_coffee(mocker, files_mocked, mg, mins, expected_mg_net_change, expected_mins_ago):
+    open_mock, json_load_mock, json_dump_mock = files_mocked
+    nmspc = Namespace(mg=mg, mins=mins, bev='coffee')
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
+
+    mocker.patch.object(cm_obj, 'process_item')
+
+    cm_obj.add_coffee()
+
+    assert cm_obj.mg_net_change == expected_mg_net_change
+    assert cm_obj.process_item.call_count == 4
+    assert cm_obj.mins_ago == expected_mins_ago
+
+
+@pytest.mark.parametrize("mg, mins, expected_mg_net_change, expected_mins_ago", [
+    (200, 0, 20, -40),      # Normal case
+    (0, 0, 0, -40),         # Edge case: 0 mg and 0 mins
+    (300, 30, 30, -10),     # Edge case: mins_ago should be 30 - 40 = -10
+    (100, -20, 10, -60),    # Edge case: mins_ago should be -20 - 40 = -60
+])
+def test_add_soda(mocker, files_mocked, mg, mins, expected_mg_net_change, expected_mins_ago):
+    open_mock, json_load_mock, json_dump_mock = files_mocked
+    nmspc = Namespace(mg=mg, mins=mins, bev='soda')
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
+
+    mocker.patch.object(cm_obj, 'process_item')
+
+    cm_obj.add_soda()
+
+    assert cm_obj.mg_net_change == expected_mg_net_change
+    assert cm_obj.process_item.call_count == 3
+    assert cm_obj.mins_ago == expected_mins_ago
+
+
 def test_add_caffeine(files_mocked):
     """Test add_caffeine() correctly updates data_dict['level']."""
     open_mock, json_load_mock, json_dump_mock = files_mocked
