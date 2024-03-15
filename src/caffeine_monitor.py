@@ -133,24 +133,6 @@ class CaffeineMonitor:
         self.data_dict['level'] *= pow(0.5, (minutes_elapsed /
                                              self.half_life))
 
-    # def decay_prev_level(self):
-    #     """
-    #     Reduce stored level to account for decay since that value
-    #     was written
-    #     """
-    #     stored_time = datetime.strptime(self.data_dict['time'],
-    #                                     '%Y-%m-%d_%H:%M')
-    #     minutes_elapsed = (self.curr_time -
-    #                        stored_time) / timedelta(minutes=1)
-    #     self.data_dict['time'] = datetime.strftime(self.curr_time,
-    #                                                '%Y-%m-%d_%H:%M')
-    #
-    #     initial_level = self.data_dict['level']
-    #     decayed_level = initial_level * pow(0.5, (minutes_elapsed / self.half_life))
-    #     self.data_dict['level'] = decayed_level
-
-
-
     def decay_before_add(self, amt_to_decay=None):
         """
         Decay caffeine consumed some time ago

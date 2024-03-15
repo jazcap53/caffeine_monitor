@@ -95,49 +95,6 @@ def files_mocked(mocker: MockerFixture):
     json_dump_mock.reset_mock(side_effect=True)
 
 
-
-# @pytest.fixture
-# def files_mocked_with_initial_values(mocker: MockerFixture):
-#     open_mock = mocker.patch('builtins.open', new_callable=mocker.mock_open,
-#                              read_data='Start of log file')
-#
-#     json_load_mock = mocker.patch('json.load')
-#     json_dump_mock = mocker.patch('json.dump')
-#
-#     def json_dump_side_effect(data, file_handle, **kwargs):
-#         indent = kwargs.get('indent', None)
-#         if indent is not None:
-#             file_handle.write(json.dumps(data, indent=indent))
-#         else:
-#             file_handle.write(json.dumps(data))
-#
-#     json_dump_mock.side_effect = json_dump_side_effect
-#
-#     yield open_mock, json_load_mock, json_dump_mock
-
-
-
-# @pytest.fixture
-# def files_mocked_with_initial_values(mocker: MockerFixture):
-#     open_mock = mocker.patch('builtins.open', new_callable=mocker.mock_open,
-#                              read_data='Start of log file')
-#
-#     json_load_mock = mocker.patch('json.load')
-#     json_dump_mock = mocker.patch('json.dump')
-#
-#     def json_dump_side_effect(data, file_handle, **kwargs):
-#         indent = kwargs.get('indent', None)
-#         if indent is not None:
-#             file_handle.write(json.dumps(data, indent=indent))
-#         else:
-#             file_handle.write(json.dumps(data))
-#
-#     json_dump_mock.side_effect = json_dump_side_effect
-#
-#     yield open_mock, json_load_mock, json_dump_mock
-
-
-
 @pytest.fixture
 def files_mocked_with_initial_values(mocker: MockerFixture):
     open_mock = mocker.patch('builtins.open', new_callable=mocker.mock_open,
