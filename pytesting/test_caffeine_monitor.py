@@ -273,7 +273,7 @@ def test_read_future_file(files_mocked):
     cm_obj.read_future_file()
 
     # Assert that the future_list attribute is set correctly
-    assert cm_obj.future_list == expected_future_list
+    assert cm_obj.future_list == sorted(expected_future_list, key=lambda x: x['time'], reverse=True)
 
 
 def test_write_future_file(files_mocked):
@@ -292,6 +292,76 @@ def test_write_future_file(files_mocked):
 
     # Assert that json.dump() is called with the correct arguments
     json_dump_mock.assert_called_once_with(cm_obj.new_future_list, cm_obj.iofile_future, indent=4)
+
+
+@pytest.mark.parametrize("future_list, curr_time, expected_mg_net_change, expected_mins_ago, expected_new_future_list", [
+    (
+        [
+            {"time": "2023-06-08_10:00", "level": 50.0},
+            {"time": "2023-06-08_11:00", "level": 25.0},
+            {"time": "2023-06-08_12:00", "level": 10.0},
+        ],
+        datetime(2023, 6, 8, 10, 30),
+        25.0,
+        -30,
+        [
+            {"time": "2023-06-08_11:00", "level": 25.0},
+            {"time": "2023-06-08_12:00", "level": 10.0},
+        ]
+    ),
+    (
+        [
+            {"time": "2023-06-08_10:00", "level": 50.0},
+            {"time": "2023-06-08_11:00", "level": 25.0},
+            {"time": "2023-06-08_10:15", "level": 20.0},
+        ],
+        datetime(2023, 6, 8, 10, 30),
+        20.0,
+        -15,
+        [
+            {"time": "2023-06-08_11:00", "level": 25.0},
+        ]
+    ),
+    (
+        [
+            {"time": "2023-06-08_10:00", "level": 50.0},
+            {"time": "2023-06-08_11:00", "level": 25.0},
+            {"time": "2023-06-08_09:45", "level": 30.0},
+        ],
+        datetime(2023, 6, 8, 10, 30),
+        30.0,
+        45,
+        [
+            {"time": "2023-06-08_10:00", "level": 50.0},
+            {"time": "2023-06-08_11:00", "level": 25.0},
+        ]
+    ),
+    (
+        [],
+        datetime(2023, 6, 8, 10, 30),
+        0.0,
+        0,
+        []
+    ),
+])
+def test_process_future_list(mocker, files_mocked, future_list, curr_time, expected_mg_net_change, expected_mins_ago, expected_new_future_list):
+    open_mock, json_load_mock, json_dump_mock = files_mocked
+    nmspc = Namespace(mg=100, mins=180, bev='coffee')
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
+
+    process_item_mock = mocker.patch.object(cm_obj, 'process_item')
+
+    with freeze_time(curr_time):
+        cm_obj.future_list = future_list
+        process_item_mock.side_effect = None
+        process_item_mock.mg_net_change = expected_mg_net_change
+        process_item_mock.mins_ago = expected_mins_ago
+        cm_obj.process_future_list()
+
+    assert cm_obj.mg_net_change == expected_mg_net_change
+    assert cm_obj.mins_ago == expected_mins_ago
+    assert cm_obj.new_future_list == expected_new_future_list
+    assert process_item_mock.call_count == len(future_list)
 
 
 @pytest.mark.skip(reason="test sub-method calls separately")

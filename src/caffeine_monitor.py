@@ -93,7 +93,8 @@ class CaffeineMonitor:
 
     def read_future_file(self):
         """Read future changes from file"""
-        self.future_list = json.load(self.iofile_future)
+        # the sort is redundant; items are sorted before write to file
+        self.future_list = sorted(json.load(self.iofile_future), key=lambda x: x['time'], reverse=True)
     
     def write_file(self):
         self.iofile.seek(0)
