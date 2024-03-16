@@ -140,7 +140,7 @@ class CaffeineMonitor:
         before it gets added to current level.
 
         :return: net change rounded to 1 digit past decimal point
-        Called by: main()
+        Called by: process_item()
         """
         if amt_to_decay is None:
             amt_to_decay = self.mg_to_add

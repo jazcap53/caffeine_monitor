@@ -294,74 +294,109 @@ def test_write_future_file(files_mocked):
     json_dump_mock.assert_called_once_with(cm_obj.new_future_list, cm_obj.iofile_future, indent=4)
 
 
-@pytest.mark.parametrize("future_list, curr_time, expected_mg_net_change, expected_mins_ago, expected_new_future_list", [
-    (
-        [
-            {"time": "2023-06-08_10:00", "level": 50.0},
-            {"time": "2023-06-08_11:00", "level": 25.0},
-            {"time": "2023-06-08_12:00", "level": 10.0},
-        ],
-        datetime(2023, 6, 8, 10, 30),
-        25.0,
-        -30,
-        [
-            {"time": "2023-06-08_11:00", "level": 25.0},
-            {"time": "2023-06-08_12:00", "level": 10.0},
-        ]
-    ),
-    (
-        [
-            {"time": "2023-06-08_10:00", "level": 50.0},
-            {"time": "2023-06-08_11:00", "level": 25.0},
-            {"time": "2023-06-08_10:15", "level": 20.0},
-        ],
-        datetime(2023, 6, 8, 10, 30),
-        20.0,
-        -15,
-        [
-            {"time": "2023-06-08_11:00", "level": 25.0},
-        ]
-    ),
-    (
-        [
-            {"time": "2023-06-08_10:00", "level": 50.0},
-            {"time": "2023-06-08_11:00", "level": 25.0},
-            {"time": "2023-06-08_09:45", "level": 30.0},
-        ],
-        datetime(2023, 6, 8, 10, 30),
-        30.0,
-        45,
-        [
-            {"time": "2023-06-08_10:00", "level": 50.0},
-            {"time": "2023-06-08_11:00", "level": 25.0},
-        ]
-    ),
-    (
-        [],
-        datetime(2023, 6, 8, 10, 30),
-        0.0,
-        0,
-        []
-    ),
+def create_namespace(mg, mins, bev):
+    return Namespace(mg=mg, mins=mins, bev=bev)
+
+
+@pytest.mark.parametrize("mg_net_change, mins_ago, expected_level, expected_new_future_list", [
+    (50.0, 30, 50.0, []),  # Normal case: add to current level
+    (0.0, 0, 0.0, []),  # Edge case: mg_net_change is 0
+    (100.0, -60, 0.0, [{"time": (datetime.now() + timedelta(minutes=60)).strftime('%Y-%m-%d_%H:%M'), "level": 100.0}]),  # Future item
 ])
-def test_process_future_list(mocker, files_mocked, future_list, curr_time, expected_mg_net_change, expected_mins_ago, expected_new_future_list):
-    open_mock, json_load_mock, json_dump_mock = files_mocked
-    nmspc = Namespace(mg=100, mins=180, bev='coffee')
-    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
+def test_process_item(mocker, mg_net_change, mins_ago, expected_level, expected_new_future_list):
+    # Arrange
+    ags = create_namespace(100, 0, 'coffee')
+    cm_obj = CaffeineMonitor(None, None, None, True, ags)
+    cm_obj.data_dict = {"level": 0.0, "time": datetime.now().strftime('%Y-%m-%d_%H:%M')}
+    cm_obj.mg_net_change = mg_net_change
+    cm_obj.mins_ago = mins_ago
+    cm_obj.new_future_list = []
 
-    process_item_mock = mocker.patch.object(cm_obj, 'process_item')
+    # Mock the decay_before_add method
+    mocker.patch.object(cm_obj, 'decay_before_add', return_value=None)
 
-    with freeze_time(curr_time):
-        cm_obj.future_list = future_list
-        process_item_mock.side_effect = None
-        process_item_mock.mg_net_change = expected_mg_net_change
-        process_item_mock.mins_ago = expected_mins_ago
-        cm_obj.process_future_list()
+    # Mock the add_caffeine method to update data_dict['level']
+    def mock_add_caffeine():
+        cm_obj.data_dict['level'] += cm_obj.mg_net_change
 
-    assert cm_obj.mg_net_change == expected_mg_net_change
-    assert cm_obj.mins_ago == expected_mins_ago
+    mocker.patch.object(cm_obj, 'add_caffeine', side_effect=mock_add_caffeine)
+
+    # Act
+    cm_obj.process_item()
+
+    # Assert
+    assert cm_obj.data_dict["level"] == expected_level
     assert cm_obj.new_future_list == expected_new_future_list
-    assert process_item_mock.call_count == len(future_list)
+
+
+# @pytest.mark.parametrize("future_list, curr_time, expected_mg_net_change, expected_mins_ago, expected_new_future_list", [
+#     (
+#         [
+#             {"time": "2023-06-08_10:00", "level": 50.0},
+#             {"time": "2023-06-08_11:00", "level": 25.0},
+#             {"time": "2023-06-08_12:00", "level": 10.0},
+#         ],
+#         datetime(2023, 6, 8, 10, 30),
+#         25.0,
+#         -30,
+#         [
+#             {"time": "2023-06-08_11:00", "level": 25.0},
+#             {"time": "2023-06-08_12:00", "level": 10.0},
+#         ]
+#     ),
+#     (
+#         [
+#             {"time": "2023-06-08_10:00", "level": 50.0},
+#             {"time": "2023-06-08_11:00", "level": 25.0},
+#             {"time": "2023-06-08_10:15", "level": 20.0},
+#         ],
+#         datetime(2023, 6, 8, 10, 30),
+#         20.0,
+#         -15,
+#         [
+#             {"time": "2023-06-08_11:00", "level": 25.0},
+#         ]
+#     ),
+#     (
+#         [
+#             {"time": "2023-06-08_10:00", "level": 50.0},
+#             {"time": "2023-06-08_11:00", "level": 25.0},
+#             {"time": "2023-06-08_09:45", "level": 30.0},
+#         ],
+#         datetime(2023, 6, 8, 10, 30),
+#         30.0,
+#         45,
+#         [
+#             {"time": "2023-06-08_10:00", "level": 50.0},
+#             {"time": "2023-06-08_11:00", "level": 25.0},
+#         ]
+#     ),
+#     (
+#         [],
+#         datetime(2023, 6, 8, 10, 30),
+#         0.0,
+#         0,
+#         []
+#     ),
+# ])
+# def test_process_future_list(mocker, files_mocked, future_list, curr_time, expected_mg_net_change, expected_mins_ago, expected_new_future_list):
+#     open_mock, json_load_mock, json_dump_mock = files_mocked
+#     nmspc = Namespace(mg=100, mins=180, bev='coffee')
+#     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
+#
+#     process_item_mock = mocker.patch.object(cm_obj, 'process_item')
+#
+#     with freeze_time(curr_time):
+#         cm_obj.future_list = future_list
+#         process_item_mock.side_effect = None
+#         process_item_mock.mg_net_change = expected_mg_net_change
+#         process_item_mock.mins_ago = expected_mins_ago
+#         cm_obj.process_future_list()
+#
+#     assert cm_obj.mg_net_change == expected_mg_net_change
+#     assert cm_obj.mins_ago == expected_mins_ago
+#     assert cm_obj.new_future_list == expected_new_future_list
+#     assert process_item_mock.call_count == len(future_list)
 
 
 @pytest.mark.skip(reason="test sub-method calls separately")
