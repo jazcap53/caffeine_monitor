@@ -298,28 +298,43 @@ def create_namespace(mg, mins, bev):
     return Namespace(mg=mg, mins=mins, bev=bev)
 
 
-@pytest.mark.parametrize("mg_net_change, mins_ago, expected_level, expected_new_future_list", [
-    (50.0, 30, 50.0, []),  # Normal case: add to current level
-    (0.0, 0, 0.0, []),  # Edge case: mg_net_change is 0
-    (100.0, -60, 0.0, [{"time": (datetime.now() + timedelta(minutes=60)).strftime('%Y-%m-%d_%H:%M'), "level": 100.0}]),  # Future item
+@pytest.mark.parametrize("mg, mins, bev, first_run", [
+    (100, 0, 'coffee', True),
+    (50, 30, 'soda', False),
+    (0, 0, 'chocolate', True),
+    (200, -60, 'coffee', False),
 ])
-def test_process_item(mocker, mg_net_change, mins_ago, expected_level, expected_new_future_list):
+@pytest.mark.parametrize("mg_net_change, mins_ago, expected_level, expected_new_future_list", [
+    # Normal case: add to current level
+    (50.0, 30, pytest.approx(47.2, abs=1e-6), []),
+
+    # Edge cases
+    # mg_net_change is 0
+    (0.0, 0, 0.0, []),
+    # Future item
+    (100.0, -60, 0.0, [{"time": (datetime.now() + timedelta(minutes=60)).strftime('%Y-%m-%d_%H:%M'), "level": 100.0}]),
+    # Negative mins_ago
+    (75.0, -120, 0.0, [{"time": (datetime.now() + timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 75.0}]),
+    # mins_ago is a large positive value
+    (200.0, 1440, pytest.approx(12.5, abs=1e-6), []),
+    # mg_net_change is a very large value
+    (sys.maxsize, 360, pytest.approx(sys.maxsize / 2, abs=1e-6), []),
+    # mins_ago is a very large negative value
+    (100.0, -100000, 0.0, [{"time": (datetime.now() + timedelta(minutes=100000)).strftime('%Y-%m-%d_%H:%M'), "level": 100.0}]),
+    # mg_net_change is a negative value
+    (-50.0, 60, pytest.approx(-44.5, abs=1e-6), []),
+    # mins_ago is a very large positive value (larger than half-life)
+    (300.0, 720000, pytest.approx(0.0, abs=1e-6), []),
+])
+def test_process_item(files_mocked, mg, mins, bev, first_run, mg_net_change, mins_ago, expected_level, expected_new_future_list):
     # Arrange
-    ags = create_namespace(100, 0, 'coffee')
-    cm_obj = CaffeineMonitor(None, None, None, True, ags)
+    ags = create_namespace(mg, mins, bev)
+    cm_obj = CaffeineMonitor(*files_mocked, first_run, ags)
     cm_obj.data_dict = {"level": 0.0, "time": datetime.now().strftime('%Y-%m-%d_%H:%M')}
     cm_obj.mg_net_change = mg_net_change
     cm_obj.mins_ago = mins_ago
     cm_obj.new_future_list = []
-
-    # Mock the decay_before_add method
-    mocker.patch.object(cm_obj, 'decay_before_add', return_value=None)
-
-    # Mock the add_caffeine method to update data_dict['level']
-    def mock_add_caffeine():
-        cm_obj.data_dict['level'] += cm_obj.mg_net_change
-
-    mocker.patch.object(cm_obj, 'add_caffeine', side_effect=mock_add_caffeine)
+    cm_obj.half_life = 360  # Setting the half-life to 360 minutes
 
     # Act
     cm_obj.process_item()
@@ -327,76 +342,6 @@ def test_process_item(mocker, mg_net_change, mins_ago, expected_level, expected_
     # Assert
     assert cm_obj.data_dict["level"] == expected_level
     assert cm_obj.new_future_list == expected_new_future_list
-
-
-# @pytest.mark.parametrize("future_list, curr_time, expected_mg_net_change, expected_mins_ago, expected_new_future_list", [
-#     (
-#         [
-#             {"time": "2023-06-08_10:00", "level": 50.0},
-#             {"time": "2023-06-08_11:00", "level": 25.0},
-#             {"time": "2023-06-08_12:00", "level": 10.0},
-#         ],
-#         datetime(2023, 6, 8, 10, 30),
-#         25.0,
-#         -30,
-#         [
-#             {"time": "2023-06-08_11:00", "level": 25.0},
-#             {"time": "2023-06-08_12:00", "level": 10.0},
-#         ]
-#     ),
-#     (
-#         [
-#             {"time": "2023-06-08_10:00", "level": 50.0},
-#             {"time": "2023-06-08_11:00", "level": 25.0},
-#             {"time": "2023-06-08_10:15", "level": 20.0},
-#         ],
-#         datetime(2023, 6, 8, 10, 30),
-#         20.0,
-#         -15,
-#         [
-#             {"time": "2023-06-08_11:00", "level": 25.0},
-#         ]
-#     ),
-#     (
-#         [
-#             {"time": "2023-06-08_10:00", "level": 50.0},
-#             {"time": "2023-06-08_11:00", "level": 25.0},
-#             {"time": "2023-06-08_09:45", "level": 30.0},
-#         ],
-#         datetime(2023, 6, 8, 10, 30),
-#         30.0,
-#         45,
-#         [
-#             {"time": "2023-06-08_10:00", "level": 50.0},
-#             {"time": "2023-06-08_11:00", "level": 25.0},
-#         ]
-#     ),
-#     (
-#         [],
-#         datetime(2023, 6, 8, 10, 30),
-#         0.0,
-#         0,
-#         []
-#     ),
-# ])
-# def test_process_future_list(mocker, files_mocked, future_list, curr_time, expected_mg_net_change, expected_mins_ago, expected_new_future_list):
-#     open_mock, json_load_mock, json_dump_mock = files_mocked
-#     nmspc = Namespace(mg=100, mins=180, bev='coffee')
-#     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
-#
-#     process_item_mock = mocker.patch.object(cm_obj, 'process_item')
-#
-#     with freeze_time(curr_time):
-#         cm_obj.future_list = future_list
-#         process_item_mock.side_effect = None
-#         process_item_mock.mg_net_change = expected_mg_net_change
-#         process_item_mock.mins_ago = expected_mins_ago
-#         cm_obj.process_future_list()
-#
-#     assert cm_obj.mg_net_change == expected_mg_net_change
-#     assert cm_obj.mins_ago == expected_mins_ago
-#     assert cm_obj.new_future_list == expected_new_future_list
-#     assert process_item_mock.call_count == len(future_list)
 
 
 @pytest.mark.skip(reason="test sub-method calls separately")
