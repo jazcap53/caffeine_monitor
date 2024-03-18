@@ -344,6 +344,54 @@ def test_process_item(files_mocked, mg, mins, bev, first_run, mg_net_change, min
     assert cm_obj.new_future_list == expected_new_future_list
 
 
+# @pytest.mark.parametrize("future_list, expected_data_dict_level, expected_new_future_list", [
+#     # Normal case: process a single past item
+#     ([{"time": (datetime(2023, 6, 8, 9, 0) - timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 50.0}],
+#      pytest.approx(39.7, abs=1e-6), []),
+#
+#     # Normal case: process multiple past items
+#     ([{"time": (datetime(2023, 6, 8, 9, 0) - timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 50.0},
+#       {"time": (datetime(2023, 6, 8, 9, 0) - timedelta(minutes=180)).strftime('%Y-%m-%d_%H:%M'), "level": 25.0}],
+#      pytest.approx(57.4, abs=1e-6), []),
+#
+#     # Normal case: process a single future item
+#     ([{"time": (datetime(2023, 6, 8, 9, 0) + timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 50.0}],
+#      0.0, [{"time": (datetime(2023, 6, 8, 9, 0) + timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 50.0}]),
+#
+#     # Normal case: process multiple future items
+#     ([{"time": (datetime(2023, 6, 8, 9, 0) + timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 50.0},
+#       {"time": (datetime(2023, 6, 8, 9, 0) + timedelta(minutes=180)).strftime('%Y-%m-%d_%H:%M'), "level": 25.0}],
+#      0.0, [{"time": (datetime(2023, 6, 8, 9, 0) + timedelta(minutes=180)).strftime('%Y-%m-%d_%H:%M'), "level": 25.0},
+#            {"time": (datetime(2023, 6, 8, 9, 0) + timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 50.0}]),
+#
+#     # Edge case: empty future list
+#     ([], 0.0, []),
+#
+#     # Edge case: process a past item with 0 level
+#     ([{"time": (datetime(2023, 6, 8, 9, 0) - timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 0.0}],
+#      0.0, []),
+#
+#     # Edge case: process a past item with negative level
+#     ([{"time": (datetime(2023, 6, 8, 9, 0) - timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": -50.0}],
+#      pytest.approx(-39.7, abs=1e-6), []),
+# ])
+# def test_process_future_list(files_mocked, future_list, expected_data_dict_level, expected_new_future_list):
+#     # Arrange
+#     nmspc = Namespace(mg=0, mins=0, bev='coffee')
+#     cm_obj = CaffeineMonitor(*files_mocked, True, nmspc)
+#     cm_obj.data_dict = {"level": 0.0, "time": datetime(2023, 6, 8, 9, 0).strftime('%Y-%m-%d_%H:%M')}
+#     cm_obj.future_list = future_list
+#     cm_obj.new_future_list = []
+#     cm_obj.curr_time = datetime(2023, 6, 8, 9, 0)  # Set a fixed current time
+#
+#     # Act
+#     cm_obj.process_future_list()
+#
+#     # Assert
+#     assert cm_obj.data_dict["level"] == expected_data_dict_level
+#     assert cm_obj.new_future_list == expected_new_future_list
+
+
 @pytest.mark.parametrize("future_list, expected_data_dict_level, expected_new_future_list", [
     # Normal case: process a single past item
     ([{"time": (datetime(2023, 6, 8, 9, 0) - timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 50.0}],

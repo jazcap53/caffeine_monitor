@@ -208,6 +208,7 @@ class CaffeineMonitor:
             self.mins_ago = (self.curr_time - item_time) / timedelta(minutes=1)
             self.mg_net_change = item['level']
             self.process_item()
+        self.new_future_list.sort(key=lambda x: x['time'], reverse=True)
 
     def process_item(self):
         """
