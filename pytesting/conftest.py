@@ -115,3 +115,12 @@ def files_mocked_with_initial_values(mocker: MockerFixture):
     yield open_mock, json_load_mock, json_dump_mock
 
 
+@pytest.fixture
+def mock_file_system(mocker):
+    mock_path = mocker.patch('src.utils.Path')
+    mock_delete_old_logfile = mocker.patch('src.utils.delete_old_logfile')
+    mock_init_logfile = mocker.patch('src.utils.init_logfile')
+    mock_init_future = mocker.patch('src.utils.init_future')
+    mock_init_storage = mocker.patch('src.utils.init_storage')
+
+    return mock_path, mock_delete_old_logfile, mock_init_logfile, mock_init_future, mock_init_storage

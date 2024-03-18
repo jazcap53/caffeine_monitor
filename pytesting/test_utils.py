@@ -10,7 +10,7 @@ from freezegun import freeze_time
 
 from src.utils import (check_which_environment, parse_args, set_up,
                        read_config_file, check_cla_match_env, init_storage,
-                       delete_old_logfile)
+                       delete_old_logfile, create_files)
 import subprocess
 from src.caffeine_monitor import CaffeineMonitor
 import builtins
@@ -194,3 +194,44 @@ def arg_helper(*L):
     assert isinstance(a, int)
     assert isinstance(b, int)
     assert isinstance(c, str)
+
+
+def test_create_files_first_run(mock_file_system):
+    # Arrange
+    log_filename = 'test.log'
+    json_filename = 'test.json'
+    json_future_filename = 'test_future.json'
+
+    mock_path, mock_delete_old_logfile, mock_init_logfile, mock_init_future, mock_init_storage = mock_file_system
+    mock_path.return_value.is_file.side_effect = [False, False]
+
+    # Act
+    first_run = create_files(log_filename, json_filename, json_future_filename)
+
+    # Assert
+    assert first_run == True
+    mock_init_storage.assert_called_once_with(json_filename)
+    mock_delete_old_logfile.assert_called_once_with(log_filename)
+    mock_init_logfile.assert_called_once_with(log_filename)
+    mock_init_future.assert_called_once_with(json_future_filename)
+
+
+def test_create_files_subsequent_run(mock_file_system, mocker):
+    # Arrange
+    log_filename = 'test.log'
+    json_filename = 'test.json'
+    json_future_filename = 'test_future.json'
+
+    mock_path, mock_delete_old_logfile, mock_init_logfile, mock_init_future, mock_init_storage = mock_file_system
+    mock_path.return_value.is_file.side_effect = [True, True]
+    mocker.patch('os.path.getsize', return_value=1)  # Mock file size greater than 0
+
+    # Act
+    first_run = create_files(log_filename, json_filename, json_future_filename)
+
+    # Assert
+    assert first_run == False
+    mock_init_storage.assert_not_called()
+    mock_delete_old_logfile.assert_not_called()
+    mock_init_logfile.assert_not_called()
+    mock_init_future.assert_not_called()

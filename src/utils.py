@@ -67,7 +67,6 @@ def create_files(log_filename, json_filename, json_future_filename):
 
     my_file = Path(json_filename)
     my_file_future = Path(json_future_filename)
-    my_logfile = Path(log_filename)  # TODO: obsolete ???
 
     if not my_file.is_file() or os.path.getsize(my_file) == 0:
         first_run = True
