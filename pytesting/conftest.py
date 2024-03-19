@@ -1,4 +1,4 @@
-# file: conftest.py
+# file: pytesting/conftest.py
 
 import io
 import json

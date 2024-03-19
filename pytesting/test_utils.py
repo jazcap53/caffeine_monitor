@@ -1,4 +1,4 @@
-# file: test_utils.py
+# file: pytesting/test_utils.py
 
 from argparse import Namespace
 import src.utils
@@ -10,7 +10,7 @@ from freezegun import freeze_time
 
 from src.utils import (check_which_environment, parse_args, set_up,
                        read_config_file, check_cla_match_env, init_storage,
-                       delete_old_logfile, create_files)
+                       delete_old_logfile, create_files, init_future)
 import subprocess
 from src.caffeine_monitor import CaffeineMonitor
 import builtins
@@ -235,3 +235,18 @@ def test_create_files_subsequent_run(mock_file_system, mocker):
     mock_delete_old_logfile.assert_not_called()
     mock_init_logfile.assert_not_called()
     mock_init_future.assert_not_called()
+
+
+def test_init_future(mocker):
+    # Arrange
+    mock_open = mocker.patch('builtins.open', mocker.mock_open())
+
+    # Define the expected JSON data to be written
+    expected_data = []
+
+    # Act
+    init_future('test_future.json')
+
+    # Assert
+    mock_open.assert_called_once_with('test_future.json', 'w')
+    mock_open().write.assert_called_once_with(json.dumps(expected_data))
