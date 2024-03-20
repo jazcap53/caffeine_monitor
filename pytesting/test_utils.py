@@ -270,60 +270,6 @@ def test_init_logfile(mocker):
     mock_print.assert_called_once_with("Start of log file", file=mock_open.return_value)
 
 
-# import pytest
-# from pytest_mock import mocker
-# import logging
-# from src.utils import set_up, parse_args, check_which_environment, read_config_file, check_cla_match_env, create_files
-
-
-# def test_set_up(mocker):
-#     # Arrange
-#     mock_args = mocker.MagicMock()
-#     mocker.patch('src.utils.parse_args', return_value=mock_args)
-#
-#     current_environment = 'test'
-#     mocker.patch('src.utils.check_which_environment', return_value=current_environment)
-#
-#     mock_config = {
-#         current_environment: {
-#             'json_file': 'test.json',
-#             'json_file_future': 'test_future.json',
-#             'log_file': 'test.log'
-#         }
-#     }
-#     mocker.patch('src.utils.read_config_file', return_value=mock_config)
-#
-#     first_run = True
-#     mocker.patch('src.utils.create_files', return_value=first_run)
-#
-#     expected_log_filename = 'test.log'
-#     expected_json_filename = 'test.json'
-#     expected_json_future_filename = 'test_future.json'
-#
-#     # Act
-#     log_filename, json_filename, json_future_filename, first_run, args = set_up()
-#
-#     # Assert
-#     parse_args.assert_called_once_with(None)
-#     check_which_environment.assert_called_once()
-#     read_config_file.assert_called_once_with('src/caffeine.ini')
-#     check_cla_match_env.assert_called_once_with(current_environment, mock_args)
-#     create_files.assert_called_once_with(expected_log_filename, expected_json_filename, expected_json_future_filename)
-#     logging.basicConfig.assert_called_once_with(filename=expected_log_filename, level=logging.INFO,
-#                                                 format='%(levelname)s: %(message)s')
-#     assert log_filename == expected_log_filename
-#     assert json_filename == expected_json_filename
-#     assert json_future_filename == expected_json_future_filename
-#     assert first_run == first_run
-#     assert args == mock_args
-
-
-# import pytest
-# from pytest_mock import mocker
-# import logging
-# from src.utils import set_up, parse_args, check_which_environment, read_config_file, check_cla_match_env, create_files
-
-
 @pytest.mark.parametrize('caff_env', ['prod', 'test', 'pytesting', 'nonsense', None, ''])
 def test_set_up(mocker, caff_env):
     # Arrange
@@ -350,7 +296,11 @@ def test_set_up(mocker, caff_env):
     mock_read_config_file = mocker.patch('src.utils.read_config_file', return_value=mock_config)
 
     mock_first_run = True
-    mocker.patch('src.utils.create_files', return_value=mock_first_run)
+    mock_create_files = mocker.patch('src.utils.create_files', return_value=mock_first_run)
+
+    mock_check_cla_match_env = mocker.patch('src.utils.check_cla_match_env')  # Mock the function
+
+    mock_logging_basicConfig = mocker.patch('logging.basicConfig')  # Mock logging.basicConfig
 
     # Act and Assert
     if caff_env in ['prod', 'test', 'pytesting']:
@@ -361,10 +311,10 @@ def test_set_up(mocker, caff_env):
 
         mock_parse_args.assert_called_once_with(expected_args[1:])  # Assert with expected arguments
         mock_read_config_file.assert_called_once_with('src/caffeine.ini')
-        check_cla_match_env.assert_called_once_with(caff_env, mock_args)
-        create_files.assert_called_once_with(expected_log_filename, expected_json_filename, expected_json_future_filename)
-        logging.basicConfig.assert_called_once_with(filename=expected_log_filename, level=logging.INFO,
-                                                    format='%(levelname)s: %(message)s')
+        mock_check_cla_match_env.assert_called_once_with(caff_env, mock_args)  # Use the mocked function
+        mock_create_files.assert_called_once_with(expected_log_filename, expected_json_filename, expected_json_future_filename)
+        mock_logging_basicConfig.assert_called_once_with(filename=expected_log_filename, level=logging.INFO,
+                                                         format='%(levelname)s: %(message)s')
         assert log_filename == expected_log_filename
         assert json_filename == expected_json_filename
         assert json_future_filename == expected_json_future_filename
