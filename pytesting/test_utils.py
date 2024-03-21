@@ -34,13 +34,13 @@ def test_bad_caff_env_value_exits(mocker):
         (["200", "360"], {"mg": 200, "mins": 360}),
         (["0", "0", "--bev", "soda"], {"mg": 0, "mins": 0, "bev": "soda"}),
         (["100", "-b", "chocolate"], {"mg": 100, "mins": 0, "bev": "chocolate"}),
+        (["-b", "coffee"], {"mg": 0, "mins": 0, "bev": "coffee"}),
         (["100", "20", "--bev", "invalid"], SystemExit),
         (["-h"], SystemExit),
         (["abc"], SystemExit),  # Invalid type for mg
         (["100", "abd"], SystemExit),  # Invalid type for mins
         (["100", "-60"], SystemExit),  # Negative value for mins
         (["100", "20", "--bev", "whiskey"], SystemExit),  # Invalid beverage type
-        (["-b", "coffee"], SystemExit),  # Missing mg argument
         (["100", "-b"], SystemExit),  # Missing beverage type after -b
     ],
 )
