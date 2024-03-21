@@ -24,18 +24,6 @@ def test_can_make_caffeine_monitor_instance_mocked(files_mocked):
     assert cm_obj.mins_ago == 180
 
 
-def test_can_make_caffeine_monitor_instance(files_mocked):
-    """
-    Check CaffeineMonitor ctor makes instance
-    """
-    open_mock, json_load_mock, json_dump_mock = files_mocked
-    nmspc = Namespace(mg=100, mins=180, bev='coffee')
-    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
-    assert isinstance(cm_obj, CaffeineMonitor)
-    assert cm_obj.mg_to_add == 100
-    assert cm_obj.mins_ago == 180
-
-
 def test_read_file(files_mocked):
     """
     Check read_file() sets data_dict values
@@ -344,54 +332,6 @@ def test_process_item(files_mocked, mg, mins, bev, first_run, mg_net_change, min
     assert cm_obj.new_future_list == expected_new_future_list
 
 
-# @pytest.mark.parametrize("future_list, expected_data_dict_level, expected_new_future_list", [
-#     # Normal case: process a single past item
-#     ([{"time": (datetime(2023, 6, 8, 9, 0) - timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 50.0}],
-#      pytest.approx(39.7, abs=1e-6), []),
-#
-#     # Normal case: process multiple past items
-#     ([{"time": (datetime(2023, 6, 8, 9, 0) - timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 50.0},
-#       {"time": (datetime(2023, 6, 8, 9, 0) - timedelta(minutes=180)).strftime('%Y-%m-%d_%H:%M'), "level": 25.0}],
-#      pytest.approx(57.4, abs=1e-6), []),
-#
-#     # Normal case: process a single future item
-#     ([{"time": (datetime(2023, 6, 8, 9, 0) + timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 50.0}],
-#      0.0, [{"time": (datetime(2023, 6, 8, 9, 0) + timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 50.0}]),
-#
-#     # Normal case: process multiple future items
-#     ([{"time": (datetime(2023, 6, 8, 9, 0) + timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 50.0},
-#       {"time": (datetime(2023, 6, 8, 9, 0) + timedelta(minutes=180)).strftime('%Y-%m-%d_%H:%M'), "level": 25.0}],
-#      0.0, [{"time": (datetime(2023, 6, 8, 9, 0) + timedelta(minutes=180)).strftime('%Y-%m-%d_%H:%M'), "level": 25.0},
-#            {"time": (datetime(2023, 6, 8, 9, 0) + timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 50.0}]),
-#
-#     # Edge case: empty future list
-#     ([], 0.0, []),
-#
-#     # Edge case: process a past item with 0 level
-#     ([{"time": (datetime(2023, 6, 8, 9, 0) - timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 0.0}],
-#      0.0, []),
-#
-#     # Edge case: process a past item with negative level
-#     ([{"time": (datetime(2023, 6, 8, 9, 0) - timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": -50.0}],
-#      pytest.approx(-39.7, abs=1e-6), []),
-# ])
-# def test_process_future_list(files_mocked, future_list, expected_data_dict_level, expected_new_future_list):
-#     # Arrange
-#     nmspc = Namespace(mg=0, mins=0, bev='coffee')
-#     cm_obj = CaffeineMonitor(*files_mocked, True, nmspc)
-#     cm_obj.data_dict = {"level": 0.0, "time": datetime(2023, 6, 8, 9, 0).strftime('%Y-%m-%d_%H:%M')}
-#     cm_obj.future_list = future_list
-#     cm_obj.new_future_list = []
-#     cm_obj.curr_time = datetime(2023, 6, 8, 9, 0)  # Set a fixed current time
-#
-#     # Act
-#     cm_obj.process_future_list()
-#
-#     # Assert
-#     assert cm_obj.data_dict["level"] == expected_data_dict_level
-#     assert cm_obj.new_future_list == expected_new_future_list
-
-
 @pytest.mark.parametrize("future_list, expected_data_dict_level, expected_new_future_list", [
     # Normal case: process a single past item
     ([{"time": (datetime(2023, 6, 8, 9, 0) - timedelta(minutes=120)).strftime('%Y-%m-%d_%H:%M'), "level": 50.0}],
@@ -438,43 +378,6 @@ def test_process_future_list(files_mocked, future_list, expected_data_dict_level
     # Assert
     assert cm_obj.data_dict["level"] == expected_data_dict_level
     assert cm_obj.new_future_list == expected_new_future_list
-
-
-# @pytest.mark.skip(reason="test sub-method calls separately")
-# def test_main(files_mocked):
-#     """
-#     Test the main() method of the CaffeineMonitor class.
-#
-#     This test verifies that the main() method correctly calculates and updates the caffeine level,
-#     accounting for the decay over time, and logs the changes appropriately.
-#     """
-#     nmspc = Namespace(mg=300, mins=360, bev='coffee')
-#     open_mock, json_load_mock, json_dump_mock = files_mocked
-#
-#     log_file, json_file, json_future_file = files_mocked
-#
-#     # Initialize the input JSON file with initial values
-#     initial_data = {"time": "2020-04-01_12:51", "level": 48.0}
-#     json.dump(initial_data, json_file)
-#     json_file.seek(0)
-#
-#     # Initialize the future JSON file as an empty list
-#     json.dump([], json_future_file)
-#     json_future_file.seek(0)
-#
-#     freezer = freeze_time('2020-04-01 18:51')
-#     freezer.start()
-#
-#     cm_obj = CaffeineMonitor(open_mock(), open_mock(), open_mock(),True, nmspc)
-#     cm_obj.main()
-#     main_output = str(cm_obj)
-#
-#     freezer.stop()
-#
-#     assert main_output == 'Caffeine level is 120.6 mg at time 2020-04-01_18:51'
-#     log_file.seek(0)
-#     log_content = log_file.read()
-#     assert '120.6 mg added (300 mg, 360 mins ago): level is 120.6 at 2020-04-01_18:51' in log_content
 
 
 @pytest.mark.parametrize("data_dict", [

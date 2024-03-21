@@ -27,52 +27,31 @@ def test_bad_caff_env_value_exits(mocker):
     assert sys.exit.called_once_with(0)
 
 
-# TODO: we don't need such elaborate tests to check the behavior of `argparse`
 @pytest.mark.parametrize(
     "args, expected",
     [
-        (["-t"], {"test": True}),
         (["200"], {"mg": 200}),
         (["200", "360"], {"mg": 200, "mins": 360}),
-        (["0", "0", "--bev", "coffee"], {"mg": 0, "mins": 0, "bev": "coffee"}),
         (["0", "0", "--bev", "soda"], {"mg": 0, "mins": 0, "bev": "soda"}),
-        (["100", "20", "--bev", "coffee"], {"mg": 100, "mins": 20, "bev": "coffee"}),
+        (["100", "-b", "chocolate"], {"mg": 100, "mins": 0, "bev": "chocolate"}),
+        (["100", "20", "--bev", "invalid"], SystemExit),
+        (["-h"], SystemExit),
+        (["abc"], SystemExit),  # Invalid type for mg
+        (["100", "abd"], SystemExit),  # Invalid type for mins
+        (["100", "-60"], SystemExit),  # Negative value for mins
+        (["100", "20", "--bev", "whiskey"], SystemExit),  # Invalid beverage type
+        (["-b", "coffee"], SystemExit),  # Missing mg argument
+        (["100", "-b"], SystemExit),  # Missing beverage type after -b
     ],
 )
 def test_parse_args(args, expected):
-    parsed_args = parse_args(args)
-    for key, value in expected.items():
-        assert getattr(parsed_args, key) == value
-
-
-@pytest.mark.parametrize('ags', [
-    (0, 0, 0, 0),
-    (0,),
-    (100, '0', 'water')
-])
-def test_parse_invalid_args(files_mocked, ags):
-    """
-    Call the script from the command line with an invalid argument
-    """
-    a, b, c = None, None, None
-    open_mock, json_load_mock, json_dump_mock = files_mocked
-
-    had_error = False
-    try:
-        a, b, c = ags
-    except ValueError:
-        had_error = True
-    try:
-        arg_helper(ags)
-    except AssertionError:
-        had_error = True
-
-    if not had_error:
-        nmspc = Namespace(mg=a, mins=b, bev=c)
-        with pytest.raises(Exception):
-            _ = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
-    else:  # We had an error, so the test should pass
-        pass
+    if expected == SystemExit:
+        with pytest.raises(SystemExit):
+            parse_args(args)
+    else:
+        parsed_args = parse_args(args)
+        for key, value in expected.items():
+            assert getattr(parsed_args, key) == value
 
 
 @pytest.mark.parametrize("env, expected_output", [
