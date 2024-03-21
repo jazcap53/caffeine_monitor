@@ -440,38 +440,112 @@ def test_process_future_list(files_mocked, future_list, expected_data_dict_level
     assert cm_obj.new_future_list == expected_new_future_list
 
 
-@pytest.mark.skip(reason="test sub-method calls separately")
-def test_main(files_mocked):
+# @pytest.mark.skip(reason="test sub-method calls separately")
+# def test_main(files_mocked):
+#     """
+#     Test the main() method of the CaffeineMonitor class.
+#
+#     This test verifies that the main() method correctly calculates and updates the caffeine level,
+#     accounting for the decay over time, and logs the changes appropriately.
+#     """
+#     nmspc = Namespace(mg=300, mins=360, bev='coffee')
+#     open_mock, json_load_mock, json_dump_mock = files_mocked
+#
+#     log_file, json_file, json_future_file = files_mocked
+#
+#     # Initialize the input JSON file with initial values
+#     initial_data = {"time": "2020-04-01_12:51", "level": 48.0}
+#     json.dump(initial_data, json_file)
+#     json_file.seek(0)
+#
+#     # Initialize the future JSON file as an empty list
+#     json.dump([], json_future_file)
+#     json_future_file.seek(0)
+#
+#     freezer = freeze_time('2020-04-01 18:51')
+#     freezer.start()
+#
+#     cm_obj = CaffeineMonitor(open_mock(), open_mock(), open_mock(),True, nmspc)
+#     cm_obj.main()
+#     main_output = str(cm_obj)
+#
+#     freezer.stop()
+#
+#     assert main_output == 'Caffeine level is 120.6 mg at time 2020-04-01_18:51'
+#     log_file.seek(0)
+#     log_content = log_file.read()
+#     assert '120.6 mg added (300 mg, 360 mins ago): level is 120.6 at 2020-04-01_18:51' in log_content
+
+
+@pytest.mark.parametrize("data_dict", [
+    {'time': datetime.now().strftime('%Y-%m-%d_%H:%M'), 'level': 0.0},
+    {'time': (datetime.now() - timedelta(hours=2)).strftime('%Y-%m-%d_%H:%M'), 'level': 50.0},
+    {'time': (datetime.now() + timedelta(hours=1)).strftime('%Y-%m-%d_%H:%M'), 'level': 75.0},
+])
+@pytest.mark.parametrize("mg, mins, bev, first_run", [
+    (100, 0, 'coffee', True),
+    (50, 30, 'soda', False),
+    (0, 0, 'chocolate', True),
+    (200, -60, 'coffee', False),
+    (-100, 0, 'coffee', True),  # Negative mg value
+    (500, 0, 'coffee', False),  # High mg value
+    (100, 1, 'coffee', True),  # Edge case mins value
+    (100, sys.maxsize, 'coffee', False),  # Maximum mins value
+    (100, 0, 'invalid', True),  # Invalid bev value
+    (0, 0, 'soda', False),  # Combination with 0 mg and soda
+    (200, 120, 'chocolate', True),  # Combination with chocolate and larger mins
+    (500, 120, 'energy drink', False),  # Test with high mg value and different beverage type
+    (75, -30, 'soda', True),  # Test with negative mins value
+    (0, 0, 'tea', False),  # Test with a different beverage type
+])
+def test_main(mocker, files_mocked, data_dict, mg, mins, bev, first_run):
     """
     Test the main() method of the CaffeineMonitor class.
 
     This test verifies that the main() method correctly calculates and updates the caffeine level,
     accounting for the decay over time, and logs the changes appropriately.
     """
-    nmspc = Namespace(mg=300, mins=360, bev='coffee')
+    nmspc = Namespace(mg=mg, mins=mins, bev=bev)
     open_mock, json_load_mock, json_dump_mock = files_mocked
 
-    log_file, json_file, json_future_file = files_mocked
+    # Mock the sub-methods called by main()
+    read_log_mock = mocker.patch.object(CaffeineMonitor, 'read_log')
+    read_file_mock = mocker.patch.object(CaffeineMonitor, 'read_file')
+    read_future_file_mock = mocker.patch.object(CaffeineMonitor, 'read_future_file')
+    decay_prev_level_mock = mocker.patch.object(CaffeineMonitor, 'decay_prev_level')
+    add_coffee_mock = mocker.patch.object(CaffeineMonitor, 'add_coffee')
+    add_soda_mock = mocker.patch.object(CaffeineMonitor, 'add_soda')
+    process_future_list_mock = mocker.patch.object(CaffeineMonitor, 'process_future_list')
+    update_time_mock = mocker.patch.object(CaffeineMonitor, 'update_time')
+    write_future_file_mock = mocker.patch.object(CaffeineMonitor, 'write_future_file')
+    write_file_mock = mocker.patch.object(CaffeineMonitor, 'write_file')
 
-    # Initialize the input JSON file with initial values
-    initial_data = {"time": "2020-04-01_12:51", "level": 48.0}
-    json.dump(initial_data, json_file)
-    json_file.seek(0)
+    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, first_run, nmspc)
 
-    # Initialize the future JSON file as an empty list
-    json.dump([], json_future_file)
-    json_future_file.seek(0)
+    # Mock the data_dict attribute after creating the CaffeineMonitor instance
+    mocker.patch.object(cm_obj, 'data_dict', data_dict)
 
-    freezer = freeze_time('2020-04-01 18:51')
-    freezer.start()
-
-    cm_obj = CaffeineMonitor(open_mock(), open_mock(), open_mock(),True, nmspc)
     cm_obj.main()
-    main_output = str(cm_obj)
 
-    freezer.stop()
+    # Assert that the sub-methods were called with the correct arguments
+    read_log_mock.assert_called_once()
+    read_file_mock.assert_called_once()
+    read_future_file_mock.assert_called_once()
 
-    assert main_output == 'Caffeine level is 120.6 mg at time 2020-04-01_18:51'
-    log_file.seek(0)
-    log_content = log_file.read()
-    assert '120.6 mg added (300 mg, 360 mins ago): level is 120.6 at 2020-04-01_18:51' in log_content
+    if not first_run:
+        decay_prev_level_mock.assert_called_once()
+    else:
+        decay_prev_level_mock.assert_not_called()
+
+    if bev == 'coffee':
+        add_coffee_mock.assert_called_once()
+    elif bev == 'soda':
+        add_soda_mock.assert_called_once()
+    else:
+        add_coffee_mock.assert_not_called()
+        add_soda_mock.assert_not_called()
+
+    process_future_list_mock.assert_called_once()
+    update_time_mock.assert_called_once()
+    write_future_file_mock.assert_called_once()
+    write_file_mock.assert_called_once()
