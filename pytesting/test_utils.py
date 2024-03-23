@@ -249,56 +249,59 @@ def test_init_logfile(mocker):
     mock_print.assert_called_once_with("Start of log file", file=mock_open.return_value)
 
 
-@pytest.mark.parametrize('caff_env', ['prod', 'test', 'pytesting', 'nonsense', None, ''])
-def test_set_up(mocker, caff_env):
-    # Arrange
-    mock_args = mocker.MagicMock()
-    mock_parse_args = mocker.patch('src.utils.parse_args', return_value=mock_args)
+class TestSetUp:
+    @pytest.fixture(autouse=True)
+    def setup(self, mocker):
+        self.mocker = mocker
+        self.mock_args = mocker.MagicMock()
+        self.mock_parse_args = mocker.patch('src.utils.parse_args', return_value=self.mock_args)
+        self.mock_config = {
+            'prod': {'json_file': 'prod.json', 'json_file_future': 'prod_future.json', 'log_file': 'prod.log'},
+            'test': {'json_file': 'test.json', 'json_file_future': 'test_future.json', 'log_file': 'test.log'},
+            'pytesting': {'json_file': 'pytesting.json', 'json_file_future': 'pytesting_future.json', 'log_file': 'pytesting.log'}
+        }
+        self.mock_read_config_file = mocker.patch('src.utils.read_config_file', return_value=self.mock_config)
+        self.mock_first_run = True
+        self.mock_create_files = mocker.patch('src.utils.create_files', return_value=self.mock_first_run)
+        self.mock_check_cla_match_env = mocker.patch('src.utils.check_cla_match_env')
+        self.mock_logging_basicConfig = mocker.patch('logging.basicConfig')
 
-    expected_args = ['script.py']  # Default value for expected_args
-
-    if caff_env in ('prod', 'test', 'pytesting'):
-        mocker.patch.dict('os.environ', {'CAFF_ENV': caff_env})
+    @pytest.mark.parametrize('caff_env', ['prod', 'test', 'pytesting'])
+    def test_set_up_valid_env(self, caff_env):
+        # Arrange
+        expected_args = ['script.py']
         if caff_env == 'test':
             expected_args = ['script.py', '-t']
         elif caff_env == 'pytesting':
             expected_args = ['script.py', '-q']
-        mocker.patch('sys.argv', expected_args)
-    else:
-        mocker.patch.dict('os.environ', clear=True)
+        self.mocker.patch.dict('os.environ', {'CAFF_ENV': caff_env})
+        self.mocker.patch('sys.argv', expected_args)
 
-    mock_config = {
-        'prod': {'json_file': 'prod.json', 'json_file_future': 'prod_future.json', 'log_file': 'prod.log'},
-        'test': {'json_file': 'test.json', 'json_file_future': 'test_future.json', 'log_file': 'test.log'},
-        'pytesting': {'json_file': 'pytesting.json', 'json_file_future': 'pytesting_future.json', 'log_file': 'pytesting.log'}
-    }
-    mock_read_config_file = mocker.patch('src.utils.read_config_file', return_value=mock_config)
-
-    mock_first_run = True
-    mock_create_files = mocker.patch('src.utils.create_files', return_value=mock_first_run)
-
-    mock_check_cla_match_env = mocker.patch('src.utils.check_cla_match_env')  # Mock the function
-
-    mock_logging_basicConfig = mocker.patch('logging.basicConfig')  # Mock logging.basicConfig
-
-    # Act and Assert
-    if caff_env in ['prod', 'test', 'pytesting']:
+        # Act
         log_filename, json_filename, json_future_filename, first_run, args = set_up()
-        expected_log_filename = mock_config[caff_env]['log_file']
-        expected_json_filename = mock_config[caff_env]['json_file']
-        expected_json_future_filename = mock_config[caff_env]['json_file_future']
 
-        mock_parse_args.assert_called_once_with(expected_args[1:])  # Assert with expected arguments
-        mock_read_config_file.assert_called_once_with('src/caffeine.ini')
-        mock_check_cla_match_env.assert_called_once_with(caff_env, mock_args)  # Use the mocked function
-        mock_create_files.assert_called_once_with(expected_log_filename, expected_json_filename, expected_json_future_filename)
-        mock_logging_basicConfig.assert_called_once_with(filename=expected_log_filename, level=logging.INFO,
-                                                         format='%(levelname)s: %(message)s')
+        # Assert
+        expected_log_filename = self.mock_config[caff_env]['log_file']
+        expected_json_filename = self.mock_config[caff_env]['json_file']
+        expected_json_future_filename = self.mock_config[caff_env]['json_file_future']
+
+        self.mock_parse_args.assert_called_once_with(expected_args[1:])
+        self.mock_read_config_file.assert_called_once_with('src/caffeine.ini')
+        self.mock_check_cla_match_env.assert_called_once_with(caff_env, self.mock_args)
+        self.mock_create_files.assert_called_once_with(expected_log_filename, expected_json_filename, expected_json_future_filename)
+        self.mock_logging_basicConfig.assert_called_once_with(filename=expected_log_filename, level=logging.INFO,
+                                                              format='%(levelname)s: %(message)s')
         assert log_filename == expected_log_filename
         assert json_filename == expected_json_filename
         assert json_future_filename == expected_json_future_filename
-        assert first_run == mock_first_run
-        assert args == mock_args
-    else:
+        assert first_run == self.mock_first_run
+        assert args == self.mock_args
+
+    @pytest.mark.parametrize('caff_env', ['nonsense', None, ''])
+    def test_set_up_invalid_env(self, caff_env):
+        # Arrange
+        self.mocker.patch.dict('os.environ', clear=True)
+
+        # Act and Assert
         with pytest.raises(SystemExit):
             set_up()
