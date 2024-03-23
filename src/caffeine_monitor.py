@@ -223,14 +223,22 @@ class CaffeineMonitor:
         if self.mins_ago < 0:  # item is still in the future
             time = (datetime.strptime(self.data_dict['time'], '%Y-%m-%d_%H:%M') +
                     timedelta(minutes=-self.mins_ago))
-            self.new_future_list.append({"time": time.strftime('%Y-%m-%d_%H:%M'),  
-                                         "level": self.mg_net_change})
+            new_item = {"time": time.strftime('%Y-%m-%d_%H:%M'), "level": self.mg_net_change}
+
+            # Find the correct position to insert the new item based on its time
+            insert_index = 0
+            for i, item in enumerate(self.new_future_list):
+                if time > datetime.strptime(item['time'], '%Y-%m-%d_%H:%M'):
+                    insert_index = i + 1
+
+            # Insert the new item at the correct position
+            self.new_future_list.insert(insert_index, new_item)
         elif self.mins_ago == 0:
             self.add_caffeine()
         else:
             self.decay_before_add(self.mg_net_change)
             self.add_caffeine()
-
+            
     def update_time(self):
         """
         Called by: main()
