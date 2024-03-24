@@ -5,6 +5,8 @@ __pycache__
 .idea/
 *.bak
 *.txt
+!make_junk/*.txt
+!!make_junk/in_re_test_main.txt
 !ai_on_testing*.txt
 !requirements.txt
 *.json*

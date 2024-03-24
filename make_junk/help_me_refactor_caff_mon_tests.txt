@@ -1,0 +1,16 @@
+
+
+We have written a suite of unit tests for this program using Pytest. I'm getting ready to do some refactoring as a next step.
+
+The program was designed to ensure that unit testing and code development do not interfere with the production code and data. 
+
+Some features that were implemented with this goal in mind include:
+    - placing input and output files in separate directories, with different file names, for the production, test, and pytesting environments.
+    - having the selection of the environment controlled by the value of the CAFF_ENV environment variable
+    - having the selection of the environment further controlled by command-line flags
+    - making sure that the command-line flags given by the user are correct for the current value of CAFF_ENV
+    - ensuring that the unit tests do not touch the file system 
+
+Is it necessary to take futher steps to ensure that these three environments are kept separate? If so, what steps would you recommend?
+
+
