@@ -7,6 +7,7 @@ __pycache__
 *.txt
 !make_junk/*.txt
 !!make_junk/in_re_test_main.txt
+!!make_junk/junk.txt
 !ai_on_testing*.txt
 !requirements.txt
 *.json*
