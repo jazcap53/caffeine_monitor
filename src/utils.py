@@ -14,12 +14,12 @@ CONFIG_FILENAME = 'src/caffeine.ini'
 
 def check_which_environment():
     """
-    :return: the current environment ('prod', 'test', or 'pytesting')
+    :return: the current environment ('prod', 'devel', or 'pytesting')
     """
     which_env = os.environ.get('CAFF_ENV')
-    if which_env is None or which_env not in ('prod', 'test', 'pytesting'):
+    if which_env is None or which_env not in ('prod', 'devel', 'pytesting'):
         print('\nPlease export environment variable CAFF_ENV as '
-              'prod, test, or pytesting\n')
+              'prod, devel, or pytesting\n')
         sys.exit(0)
     return which_env
 
@@ -39,7 +39,7 @@ def parse_args(args=None):
     parser = argparse.ArgumentParser(description='Estimate the quantity of caffeine (in mg) in the user\'s body')
 
     env_group = parser.add_mutually_exclusive_group()
-    env_group.add_argument('-t', '--test', action='store_true', help='Use test environment')
+    env_group.add_argument('-d', '--devel', action='store_true', help='Use development environment')
     env_group.add_argument('-q', '--pytesting', dest='pytesting', action='store_true', help='Use pytesting environment for pytest runs')
 
     parser.add_argument('mg', nargs='?', type=int, default=0, help='amount of caffeine added (may be 0)')
@@ -91,24 +91,24 @@ def check_cla_match_env(cur_env, ags):
     """
     Exit with message if the current environment does not match
     the given command line arguments.
-    :param cur_env: the current environment ('test', 'prod', or 'pytesting')
+    :param cur_env: the current environment ('prod', 'devel', or 'pytesting')
     :param ags: an argparse.Namespace object
     :return: None
     """
-    ags.test = True if '-t' in sys.argv or '--test' in sys.argv else False
+    ags.devel = True if '-d' in sys.argv or '--devel' in sys.argv else False
     ags.pytesting = True if '-q' in sys.argv or '--pytesting' in sys.argv else False  # Check for -q or --pytesting flag
 
-    # Note: case `args.test and args.pytesting` handled by `argparse()`
+    # Note: case `args.devel and args.pytesting` handled by `argparse()`
 
     if ags.pytesting:
         if cur_env != 'pytesting':
             print("Please switch to the pytesting environment with 'export CAFF_ENV=pytesting'")
             sys.exit(0)
-    elif ags.test:
-        if cur_env != 'test':
-            print("Please switch to the test environment with 'export CAFF_ENV=test'")
+    elif ags.devel:
+        if cur_env != 'devel':
+            print("Please switch to the devel environment with 'export CAFF_ENV=devel'")
             sys.exit(0)
-    else:  # not ags.test and not ags.pytesting
+    else:  # not ags.devel and not ags.pytesting
         if cur_env != 'prod':
             print("You may switch to the production environment with 'export CAFF_ENV=prod'")
             sys.exit(0)
