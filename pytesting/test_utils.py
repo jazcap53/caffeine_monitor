@@ -58,7 +58,7 @@ def test_parse_args(args, expected):
     (None, "Please export environment variable CAFF_ENV as"),
     ("pytesting", "pytesting"),
     ("prod", "prod"),
-    ("test", "test"),
+    ("devel", "devel"),
 ])
 def test_check_which_environment(mocker, capsys, env, expected_output):
     if env is None:
@@ -95,27 +95,27 @@ log_file = tests/caff_test.log
 
 
 @pytest.mark.parametrize(
-    "cur_env, test_flag, pytesting_flag, expected_exit",
+    "cur_env, devel_flag, pytesting_flag, expected_exit",
     [
         ("pytesting", False, True, False),
         ("pytesting", True, False, True),
         ("pytesting", False, False, True),
-        ("test", False, True, True),
-        ("test", True, False, False),
-        ("test", False, False, True),
+        ("devel", False, True, True),
+        ("devel", True, False, False),
+        ("devel", False, False, True),
         ("prod", False, True, True),
         ("prod", True, False, True),
         ("prod", False, False, False),
     ],
 )
-def test_check_cla_match_env(mocker, cur_env, test_flag, pytesting_flag, expected_exit):
+def test_check_cla_match_env(mocker, cur_env, devel_flag, pytesting_flag, expected_exit):
     args = mocker.MagicMock()
-    args.test = test_flag
+    args.devel = devel_flag
     args.pytesting = pytesting_flag
 
     mocker.patch("sys.argv", ["script.py"])
-    if test_flag:
-        mocker.patch("sys.argv", ["script.py", "-t"])
+    if devel_flag:
+        mocker.patch("sys.argv", ["script.py", "-d"])
     elif pytesting_flag:
         mocker.patch("sys.argv", ["script.py", "-q"])
 
@@ -257,7 +257,7 @@ class TestSetUp:
         self.mock_parse_args = mocker.patch('src.utils.parse_args', return_value=self.mock_args)
         self.mock_config = {
             'prod': {'json_file': 'prod.json', 'json_file_future': 'prod_future.json', 'log_file': 'prod.log'},
-            'test': {'json_file': 'test.json', 'json_file_future': 'test_future.json', 'log_file': 'test.log'},
+            'devel': {'json_file': 'devel.json', 'json_file_future': 'devel_future.json', 'log_file': 'devel.log'},
             'pytesting': {'json_file': 'pytesting.json', 'json_file_future': 'pytesting_future.json', 'log_file': 'pytesting.log'}
         }
         self.mock_read_config_file = mocker.patch('src.utils.read_config_file', return_value=self.mock_config)
@@ -266,12 +266,12 @@ class TestSetUp:
         self.mock_check_cla_match_env = mocker.patch('src.utils.check_cla_match_env')
         self.mock_logging_basicConfig = mocker.patch('logging.basicConfig')
 
-    @pytest.mark.parametrize('caff_env', ['prod', 'test', 'pytesting'])
+    @pytest.mark.parametrize('caff_env', ['prod', 'devel', 'pytesting'])
     def test_set_up_valid_env(self, caff_env):
         # Arrange
         expected_args = ['script.py']
-        if caff_env == 'test':
-            expected_args = ['script.py', '-t']
+        if caff_env == 'devel':
+            expected_args = ['script.py', '-d']
         elif caff_env == 'pytesting':
             expected_args = ['script.py', '-q']
         self.mocker.patch.dict('os.environ', {'CAFF_ENV': caff_env})
