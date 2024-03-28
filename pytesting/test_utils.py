@@ -75,23 +75,57 @@ def test_check_which_environment(mocker, capsys, env, expected_output):
         assert check_which_environment() == expected_output
 
 
-def test_read_config_file_fake(tmpdir):
-    fh = tmpdir.join("config.ini")
-    fh.write('''\
+def test_read_config_file_fake(mocker):
+    # Define the fake configuration file content
+    fake_config_content = '''
 [prod]
 json_file = src/caffeine_production.json
+json_file_future = src/caffeine_production_future.json
 log_file = src/caffeine_production.log
 
-[test]
-json_file = tests/caff_test.json
-log_file = tests/caff_test.log
-    ''')
-    config = read_config_file(fh)
-    assert config.sections() == ['prod', 'test']
-    assert config['prod'], {'json_file': 'src/caffeine_production.json',
-                            'log_file': 'src/caffeine_production.log'}
-    assert config['test'], {'json_file': 'tests/caff_test.json',
-                            'log_file': 'tests/caff_test.log'}
+[devel]
+json_file = devel/caff_devel.json
+json_file_future = devel/caff_devel_future.json
+log_file = devel/caff_devel.log
+
+[pytesting]
+json_file = pytesting/caff_pytesting.json
+json_file_future = pytesting/caff_pytesting_future.json
+log_file = pytesting/caff_pytesting.log
+json_file_scratch = pytesting/caff_pytesting_scratch.json
+json_file_future_scratch = pytesting/caff_pytesting_future_scratch.json
+log_file_scratch = pytesting/caff_pytesting_scratch.log
+    '''
+
+    # Patch the open function to return the fake configuration file content
+    mock_open = mocker.patch('builtins.open', mocker.mock_open(read_data=fake_config_content))
+
+    # Call the read_config_file function with a dummy filename
+    config = read_config_file('dummy_config.ini')
+
+    # Assert the expected configuration sections and values
+    assert config.sections() == ['prod', 'devel', 'pytesting']
+    assert config['prod'] == {
+        'json_file': 'src/caffeine_production.json',
+        'json_file_future': 'src/caffeine_production_future.json',
+        'log_file': 'src/caffeine_production.log'
+    }
+    assert config['devel'] == {
+        'json_file': 'devel/caff_devel.json',
+        'json_file_future': 'devel/caff_devel_future.json',
+        'log_file': 'devel/caff_devel.log'
+    }
+    assert config['pytesting'] == {
+        'json_file': 'pytesting/caff_pytesting.json',
+        'json_file_future': 'pytesting/caff_pytesting_future.json',
+        'log_file': 'pytesting/caff_pytesting.log',
+        'json_file_scratch': 'pytesting/caff_pytesting_scratch.json',
+        'json_file_future_scratch': 'pytesting/caff_pytesting_future_scratch.json',
+        'log_file_scratch': 'pytesting/caff_pytesting_scratch.log'
+    }
+
+    # Assert that the open function was called with the dummy filename
+    mock_open.assert_called_once_with('dummy_config.ini', encoding='locale')  # 'locale': default system encoding
 
 
 @pytest.mark.parametrize(
@@ -141,17 +175,31 @@ def test_init_storage_bad_filename_raises_oserror(mocker):
     mock_open.assert_called_with('a/b', 'w')
 
 
-def test_init_storage_stores_good_json_file(tmpdir):
-    filename = tmpdir.join('delete_me.json')
+def test_init_storage_stores_good_json_file(mocker):
+    # Set up the mocked open function
+    mock_file_data = []
+
+    def mock_open_side_effect(file, mode='r', *args, **kwargs):
+        nonlocal mock_file_data
+        mock_file = mocker.mock_open(read_data=''.join(mock_file_data)).return_value
+        mock_file.write.side_effect = lambda data: mock_file_data.append(data)
+        return mock_file
+
+    mocker.patch('builtins.open', side_effect=mock_open_side_effect)
+
+    # Call the init_storage function with a dummy filename
+    dummy_filename = 'dummy.json'
     freezer = freeze_time('2020-03-26 14:13')
     freezer.start()
-    init_storage(filename)
+    init_storage(dummy_filename)
     freezer.stop()
-    with open(filename) as file_handle:
-        line_read = json.load(file_handle)
-        assert line_read == {'time': '2020-03-26_14:13', 'level': 0}
-        file_handle.close()
-    os.remove(filename)
+
+    # Assert that the open function was called with the correct arguments
+    # (no need to assert this, as we are mocking the open function directly)
+
+    # Assert that the correct data was written to the file
+    expected_data = {'time': '2020-03-26_14:13', 'level': 0}
+    assert json.loads(''.join(mock_file_data)) == expected_data
 
 
 def test_delete_old_logfile_success(tmpdir):
