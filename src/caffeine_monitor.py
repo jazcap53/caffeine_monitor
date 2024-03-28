@@ -37,6 +37,8 @@ class CaffeineMonitor:
         self.data_dict = {}  # data to be read from and dumped to .json file
         self.mg_to_add = int(ags.mg)
         self.mins_ago = int(ags.mins)
+        self.time_entered = datetime.now()
+        self.time_to_process = self.time_entered - timedelta(minutes=self.mins_ago)
         self.mg_net_change = 0.0
         self.beverage = ags.bev
         self.future_list = []
@@ -93,9 +95,27 @@ class CaffeineMonitor:
 
     def read_future_file(self):
         """Read future changes from file"""
-        # the sort is redundant; items are sorted before write to file
-        self.future_list = sorted(json.load(self.iofile_future), key=lambda x: x['time'], reverse=True)
-    
+        try:
+            future_data = json.load(self.iofile_future)
+            self.future_list = sorted(
+                [
+                    {
+                        'time_to_process': datetime.fromisoformat(item['time_to_process']),
+                        'time_entered': datetime.fromisoformat(item['time_entered']),
+                        'level': item['level']
+                    }
+                    for item in future_data
+                ],
+                key=lambda x: x['time_to_process'],
+                reverse=True
+            )
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON data in {self.iofile_future.name}: {e}")
+            self.future_list = []  # Initialize an empty list if JSON data is invalid
+        except FileNotFoundError as e:
+            print(f"File not found: {self.iofile_future.name}")
+            self.future_list = []  # Initialize an empty list if the file doesn't exist
+
     def write_file(self):
         self.iofile.seek(0)
         self.iofile.truncate(0)
@@ -104,8 +124,25 @@ class CaffeineMonitor:
     def write_future_file(self):
         self.iofile_future.seek(0)
         self.iofile_future.truncate()
-        self.new_future_list.sort(key=lambda x: x['time'], reverse=True)
-        json.dump(self.new_future_list, self.iofile_future, indent=4)
+        self.new_future_list.sort(key=lambda x: x['time_to_process'], reverse=True)
+
+        # Convert datetime objects to ISO 8601 formatted strings
+        serializable_data = [
+            {
+                'time_to_process': item['time_to_process'].isoformat(),
+                'time_entered': item['time_entered'].isoformat(),
+                'level': item['level']
+            }
+            for item in self.new_future_list
+        ]
+
+        json.dump(serializable_data, self.iofile_future, indent=4)
+
+    # def write_future_file(self):
+    #     self.iofile_future.seek(0)
+    #     self.iofile_future.truncate()
+    #     self.new_future_list.sort(key=lambda x: x['time'], reverse=True)
+    #     json.dump(self.new_future_list, self.iofile_future, indent=4)
 
     def write_log(self):
         """
@@ -114,11 +151,25 @@ class CaffeineMonitor:
         log_mesg = (f'level is {round(self.data_dict["level"], 1)} '
                     f'at {self.data_dict["time"]}')
         if self.mg_net_change:
+            actual_mins_ago = (self.time_to_process - self.time_entered).total_seconds() / 60
             log_mesg = (f'{self.mg_net_change:.1f} mg added ({self.mg_to_add} '
-                        f'mg, {self.mins_ago} mins ago): ' + log_mesg)
+                        f'mg, {actual_mins_ago:.0f} mins ago): ' + log_mesg)
             logging.info(log_mesg)
         else:
             logging.debug(log_mesg)
+
+    # def write_log(self):
+    #     """
+    #     Called by: self.add_caffeine()
+    #     """
+    #     log_mesg = (f'level is {round(self.data_dict["level"], 1)} '
+    #                 f'at {self.data_dict["time"]}')
+    #     if self.mg_net_change:
+    #         log_mesg = (f'{self.mg_net_change:.1f} mg added ({self.mg_to_add} '
+    #                     f'mg, {self.mins_ago} mins ago): ' + log_mesg)
+    #         logging.info(log_mesg)
+    #     else:
+    #         logging.debug(log_mesg)
 
     def decay_prev_level(self):
         """
@@ -162,83 +213,158 @@ class CaffeineMonitor:
         self.write_log()
 
     def add_coffee(self):
-        """
-        Called by: main()
-        """ 
         quarter = self.mg_to_add / 4
-        self.mg_net_change = quarter
+
+        self.time_entered = datetime.now()
 
         for i in range(4):
+            self.mg_net_change = quarter
+            self.time_to_process = self.time_entered + timedelta(minutes=i * COFFEE_MINS_DECREMENT)
             self.process_item()
-            self.mins_ago -= COFFEE_MINS_DECREMENT
+
+    # def add_coffee(self):
+    #     """
+    #     Called by: main()
+    #     """
+    #     quarter = self.mg_to_add / 4
+    #     self.mg_net_change = quarter
+    #
+    #     for i in range(4):
+    #         self.process_item()
+    #         self.mins_ago -= COFFEE_MINS_DECREMENT
 
     def add_soda(self):
-        """
-        Called by: main()
-        """
-        # drink 65% now, 25% after SODA_MINS_DECREMENT minutes,
-        # remaining 10% after another SODA_MINS_DECREMENT minutes
         soda_amt = self.mg_to_add
 
+        self.time_entered = datetime.now()
+
+        # First part (65%)
         first_amt = soda_amt * 0.65
         self.mg_net_change = first_amt
-        # self.mins_ago = 0
+        self.time_to_process = self.time_entered
         self.process_item()
 
+        # Second part (25%)
         second_amt = soda_amt * 0.25
-        self.mins_ago -= SODA_MINS_DECREMENT
         self.mg_net_change = second_amt
+        self.time_to_process = self.time_entered + timedelta(minutes=SODA_MINS_DECREMENT)
         self.process_item()
 
+        # Third part (10%)
         third_amt = soda_amt * 0.1
-        self.mins_ago -= SODA_MINS_DECREMENT
         self.mg_net_change = third_amt
+        self.time_to_process = self.time_entered + timedelta(minutes=2 * SODA_MINS_DECREMENT)
         self.process_item()
+        
+    # def add_soda(self):
+    #     """
+    #     Called by: main()
+    #     """
+    #     # drink 65% now, 25% after SODA_MINS_DECREMENT minutes,
+    #     # remaining 10% after another SODA_MINS_DECREMENT minutes
+    #     soda_amt = self.mg_to_add
+    #
+    #     first_amt = soda_amt * 0.65
+    #     self.mg_net_change = first_amt
+    #     # self.mins_ago = 0
+    #     self.process_item()
+    #
+    #     second_amt = soda_amt * 0.25
+    #     self.mins_ago -= SODA_MINS_DECREMENT
+    #     self.mg_net_change = second_amt
+    #     self.process_item()
+    #
+    #     third_amt = soda_amt * 0.1
+    #     self.mins_ago -= SODA_MINS_DECREMENT
+    #     self.mg_net_change = third_amt
+    #     self.process_item()
 
     def process_future_list(self):
-        """
-        Process each item from self.future_list
-
-        Called by: main()
-        """
-        self.future_list.sort(key=lambda x: x['time'], reverse=True)
+        self.future_list.sort(key=lambda x: x['time_to_process'], reverse=True)
         while self.future_list:
             item = self.future_list.pop()
-            item_time = datetime.strptime(item['time'], '%Y-%m-%d_%H:%M')
-            self.mins_ago = (self.curr_time - item_time) / timedelta(minutes=1)
+            self.time_entered = item['time_entered']
+            self.time_to_process = item['time_to_process']
             self.mg_net_change = item['level']
             self.process_item()
-        self.new_future_list.sort(key=lambda x: x['time'], reverse=True)
+        self.new_future_list.sort(key=lambda x: x['time_to_process'], reverse=True)
+
+    # def process_future_list(self):
+    #     """
+    #     Process each item from self.future_list
+    #
+    #     Called by: main()
+    #     """
+    #     self.future_list.sort(key=lambda x: x['time'], reverse=True)
+    #     while self.future_list:
+    #         item = self.future_list.pop()
+    #         item_time = datetime.strptime(item['time'], '%Y-%m-%d_%H:%M')
+    #         self.mins_ago = (self.curr_time - item_time) / timedelta(minutes=1)
+    #         self.mg_net_change = item['level']
+    #         self.process_item()
+    #     self.new_future_list.sort(key=lambda x: x['time'], reverse=True)
 
     def process_item(self):
-        """
-        Process one caffeine item
-
-        Called by: self.add_coffee(), self.add_soda(), 
-                   self.process_future_list()
-        """
         if self.mg_net_change == 0:
             return
 
-        if self.mins_ago < 0:  # item is still in the future
-            time = (datetime.strptime(self.data_dict['time'], '%Y-%m-%d_%H:%M') +
-                    timedelta(minutes=-self.mins_ago))
-            new_item = {"time": time.strftime('%Y-%m-%d_%H:%M'), "level": self.mg_net_change}
-
-            # Find the correct position to insert the new item based on its time
-            insert_index = 0
-            for i, item in enumerate(self.new_future_list):
-                if time > datetime.strptime(item['time'], '%Y-%m-%d_%H:%M'):
-                    insert_index = i + 1
-
-            # Insert the new item at the correct position
-            self.new_future_list.insert(insert_index, new_item)
-        elif self.mins_ago == 0:
+        if self.time_to_process > self.curr_time:  # item is still in the future
+            new_item = {"time_to_process": self.time_to_process, "time_entered": self.time_entered,
+                        "level": self.mg_net_change}
+            self.new_future_list.append(new_item)
+        elif self.time_to_process == self.curr_time:  # item is in the present
             self.add_caffeine()
-        else:
-            self.decay_before_add(self.mg_net_change)
+        else:  # item is in the past
+            actual_mins_ago = (self.curr_time - self.time_entered).total_seconds() / 60
+            self.decay_before_add(self.mg_net_change, actual_mins_ago)
             self.add_caffeine()
-            
+
+    # def process_item(self):
+    #     """
+    #     Process one caffeine item
+    #     """
+    #     if self.mg_net_change == 0:
+    #         return
+    #
+    #     if self.time_to_process > self.curr_time:  # item is still in the future
+    #         new_item = {"time_to_process": self.time_to_process, "level": self.mg_net_change}
+    #         self.new_future_list.append(new_item)
+    #     elif self.time_to_process == self.curr_time:  # item is in the present
+    #         self.add_caffeine()
+    #     else:  # item is in the past
+    #         actual_mins_ago = (self.curr_time - self.time_entered).total_seconds() / 60
+    #         self.decay_before_add(self.mg_net_change, actual_mins_ago)
+    #         self.add_caffeine()
+
+    # def process_item(self):
+    #     """
+    #     Process one caffeine item
+    #
+    #     Called by: self.add_coffee(), self.add_soda(),
+    #                self.process_future_list()
+    #     """
+    #     if self.mg_net_change == 0:
+    #         return
+    #
+    #     if self.mins_ago < 0:  # item is still in the future
+    #         time = (datetime.strptime(self.data_dict['time'], '%Y-%m-%d_%H:%M') +
+    #                 timedelta(minutes=-self.mins_ago))
+    #         new_item = {"time": time.strftime('%Y-%m-%d_%H:%M'), "level": self.mg_net_change}
+    #
+    #         # Find the correct position to insert the new item based on its time
+    #         insert_index = 0
+    #         for i, item in enumerate(self.new_future_list):
+    #             if time > datetime.strptime(item['time'], '%Y-%m-%d_%H:%M'):
+    #                 insert_index = i + 1
+    #
+    #         # Insert the new item at the correct position
+    #         self.new_future_list.insert(insert_index, new_item)
+    #     elif self.mins_ago == 0:
+    #         self.add_caffeine()
+    #     else:
+    #         self.decay_before_add(self.mg_net_change)
+    #         self.add_caffeine()
+
     def update_time(self):
         """
         Called by: main()
