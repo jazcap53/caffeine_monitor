@@ -202,20 +202,30 @@ def test_init_storage_stores_good_json_file(mocker):
     assert json.loads(''.join(mock_file_data)) == expected_data
 
 
-def test_delete_old_logfile_success(tmpdir):
-    filename = tmpdir.join('bogus.log')
-    with open(filename, 'w') as handle:
-        handle.close()
-    assert delete_old_logfile(filename)
+def test_delete_old_logfile_success(mocker):
+    # Arrange
+    filename = 'bogus.log'
+    mock_os_remove = mocker.patch('os.remove')
+
+    # Act
+    result = delete_old_logfile(filename)
+
+    # Assert
+    mock_os_remove.assert_called_once_with(filename)
+    assert result == True
 
 
-def test_delete_old_logfile_failure(tmpdir):
-    name_string = 'bogus.log'
-    filename = tmpdir.join(name_string)
-    while os.path.isfile(filename):  # make *sure* file doesn't exist
-        name_string += 'x'
-        filename = tmpdir.join(name_string)
-    assert not delete_old_logfile(filename)
+def test_delete_old_logfile_failure(mocker):
+    # Arrange
+    filename = 'nonexistent.log'
+    mock_os_remove = mocker.patch('os.remove', side_effect=OSError)
+
+    # Act
+    result = delete_old_logfile(filename)
+
+    # Assert
+    mock_os_remove.assert_called_once_with(filename)
+    assert result == False
 
 
 def arg_helper(*L):
