@@ -166,24 +166,6 @@ class CaffeineMonitor:
         self.data_dict['level'] *= pow(0.5, (minutes_elapsed /
                                              self.half_life))
 
-    # def decay_before_add(self, amt_to_decay=None):
-    #     """
-    #     Decay caffeine consumed some time ago
-    #     before it gets added to current level.
-    #
-    #     :return: net change rounded to 1 digit past decimal point
-    #     Called by: process_item()
-    #     """
-    #     if amt_to_decay is None:
-    #         amt_to_decay = self.mg_to_add
-    #
-    #     # calculate the time at which caffeine was consumed
-    #     old_time = self.curr_time - timedelta(minutes=self.mins_ago)
-    #     minutes_elapsed = (self.curr_time - old_time) / timedelta(minutes=1)
-    #     net_change = (amt_to_decay *
-    #                   pow(0.5, (minutes_elapsed / self.half_life)))
-    #     self.mg_net_change = round(net_change, 1)
-
     def decay_before_add(self, amt_to_decay=None):
         """
         Decay caffeine consumed some time ago
@@ -254,34 +236,22 @@ class CaffeineMonitor:
             self.process_item()
         self.new_future_list.sort(key=lambda x: x['time_to_process'], reverse=True)
 
-    # def process_item(self):
-    #     if self.mg_net_change == 0:
-    #         return
-    #
-    #     if self.time_to_process > self.curr_time:  # item is still in the future
-    #         new_item = {"time_to_process": self.time_to_process, "time_entered": self.time_entered,
-    #                     "level": self.mg_net_change}
-    #         self.new_future_list.append(new_item)
-    #     elif self.time_to_process == self.curr_time:  # item is in the present
-    #         self.add_caffeine()
-    #     else:  # item is in the past
-    #         actual_mins_ago = (self.curr_time - self.time_entered).total_seconds() / 60
-    #         self.decay_before_add(self.mg_net_change, actual_mins_ago)
-    #         self.add_caffeine()
-
     def process_item(self):
         if self.mg_net_change == 0:
             return
 
-        if self.time_to_process > self.time_entered:  # item is still in the future
+        current_time = datetime.now()
+
+        if self.time_to_process > current_time:  # item is still in the future
             new_item = {"time_to_process": self.time_to_process, "time_entered": self.time_entered,
                         "level": self.mg_net_change}
             self.new_future_list.append(new_item)
-        elif self.time_to_process == self.time_entered:  # item is in the present
+        elif self.time_to_process == current_time:  # item is in the present
             self.add_caffeine()
-        else:  # item is in the past
-            actual_mins_ago = (self.time_entered - self.time_to_process).total_seconds() / 60
+        else:  # self.time_to_process < current_time:  # item is in the past
+            actual_mins_ago = (current_time - self.time_to_process).total_seconds() / 60
             self.mins_ago = actual_mins_ago
+            self.mg_to_add = self.mg_net_change
             self.decay_before_add()
             self.add_caffeine()
 
