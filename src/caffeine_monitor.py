@@ -180,9 +180,11 @@ class CaffeineMonitor:
         # calculate the time at which caffeine was consumed
         old_time = self.curr_time - timedelta(minutes=self.mins_ago)
         minutes_elapsed = (self.curr_time - old_time) / timedelta(minutes=1)
-        net_change = (amt_to_decay *
-                      pow(0.5, (minutes_elapsed / self.half_life)))
-        self.mg_net_change = round(net_change, 1)
+        if minutes_elapsed == 0:  # no time elapsed, so no decay
+            amount_left_after_decay = amt_to_decay
+        else:
+            amount_left_after_decay = amt_to_decay * pow(0.5, (minutes_elapsed / self.half_life))
+        self.mg_net_change = round(amount_left_after_decay, 1)
 
     def add_caffeine(self):
         """
@@ -196,7 +198,7 @@ class CaffeineMonitor:
     def add_coffee(self):
         quarter = self.mg_to_add / 4
 
-        self.time_entered = datetime.now()
+        self.time_entered = self.curr_time
 
         for i in range(4):
             self.mg_net_change = quarter
@@ -240,7 +242,8 @@ class CaffeineMonitor:
         if self.mg_net_change == 0:
             return
 
-        current_time = datetime.now()
+        # current_time = datetime.now()
+        current_time = self.curr_time
 
         if self.time_to_process > current_time:  # item is still in the future
             new_item = {"time_to_process": self.time_to_process, "time_entered": self.time_entered,
