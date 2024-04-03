@@ -149,11 +149,6 @@ class CaffeineMonitor:
         if self.mg_net_change:
             mins_decayed = (self.current_time - self.when_to_process).total_seconds() / 60
 
-            try:
-                self.mg_to_add_now = self.current_item['level']
-            except TypeError as e:  # no `self.current_item`
-                self.mg_to_add_now = self.data_dict['level']
-
             log_mesg = (f'{self.mg_net_change:.1f} mg added ({self.mg_to_add_now} '
                         f'mg, decayed {mins_decayed:.1f} mins): ' + log_mesg)
             logging.info(log_mesg)
@@ -202,6 +197,7 @@ class CaffeineMonitor:
     def add_coffee(self):
         self.mg_to_add_now = self.mg_to_add / 4
 
+        # TODO: confusing -- change this variable name
         time_entered = self.current_time
 
         for i in range(4):
