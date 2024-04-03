@@ -36,16 +36,18 @@ class CaffeineMonitor:
         self.iofile_future = iofile_future
         self.data_dict = {}  # data to be read from and dumped to .json file
         self.mg_to_add = int(ags.mg)
+        self.mg_to_add_now = 0.0
         self.mins_ago = int(ags.mins)
         self.time_entered = datetime.now()
-        self.time_to_process = self.time_entered - timedelta(minutes=self.mins_ago)
+        self.when_to_process = self.time_entered - timedelta(minutes=self.mins_ago)
         self.mg_net_change = 0.0
         self.beverage = ags.bev
         self.future_list = []
         self.new_future_list = []
         self.log_line_one = ''
         self.first_run = first_run
-        self._curr_time = datetime.today()
+        self.current_time = datetime.today()
+        self.current_item = None
         self.log_contents = ()
 
     def main(self):
@@ -100,13 +102,13 @@ class CaffeineMonitor:
             self.future_list = sorted(
                 [
                     {
-                        'time_to_process': datetime.fromisoformat(item['time_to_process']),
+                        'when_to_process': datetime.fromisoformat(item['when_to_process']),
                         'time_entered': datetime.fromisoformat(item['time_entered']),
                         'level': item['level']
                     }
                     for item in future_data
                 ],
-                key=lambda x: x['time_to_process'],
+                key=lambda x: x['when_to_process'],
                 reverse=True
             )
         except json.JSONDecodeError as e:
@@ -124,12 +126,12 @@ class CaffeineMonitor:
     def write_future_file(self):
         self.iofile_future.seek(0)
         self.iofile_future.truncate()
-        self.new_future_list.sort(key=lambda x: x['time_to_process'], reverse=True)
+        self.new_future_list.sort(key=lambda x: x['when_to_process'], reverse=True)
 
         # Convert datetime objects to ISO 8601 formatted strings
         serializable_data = [
             {
-                'time_to_process': item['time_to_process'].isoformat(),
+                'when_to_process': item['when_to_process'].isoformat(),
                 'time_entered': item['time_entered'].isoformat(),
                 'level': item['level']
             }
@@ -145,9 +147,15 @@ class CaffeineMonitor:
         log_mesg = (f'level is {round(self.data_dict["level"], 1)} '
                     f'at {self.data_dict["time"]}')
         if self.mg_net_change:
-            actual_mins_ago = (self.time_to_process - self.time_entered).total_seconds() / 60
-            log_mesg = (f'{self.mg_net_change:.1f} mg added ({self.mg_to_add} '
-                        f'mg, {actual_mins_ago:.0f} mins ago): ' + log_mesg)
+            mins_decayed = (self.current_time - self.when_to_process).total_seconds() / 60
+
+            try:
+                self.mg_to_add_now = self.current_item['level']
+            except TypeError as e:  # no `self.current_item`
+                self.mg_to_add_now = self.data_dict['level']
+
+            log_mesg = (f'{self.mg_net_change:.1f} mg added ({self.mg_to_add_now} '
+                        f'mg, decayed {mins_decayed:.1f} mins): ' + log_mesg)
             logging.info(log_mesg)
         else:
             logging.debug(log_mesg)
@@ -159,14 +167,14 @@ class CaffeineMonitor:
         """
         stored_time = datetime.strptime(self.data_dict['time'],
                                         '%Y-%m-%d_%H:%M')
-        minutes_elapsed = (self.curr_time -
+        minutes_elapsed = (self.current_time -
                            stored_time) / timedelta(minutes=1)
-        self.data_dict['time'] = datetime.strftime(self.curr_time,
+        self.data_dict['time'] = datetime.strftime(self.current_time,
                                                    '%Y-%m-%d_%H:%M')
         self.data_dict['level'] *= pow(0.5, (minutes_elapsed /
                                              self.half_life))
 
-    def decay_before_add(self, amt_to_decay=None):
+    def decay_before_add(self):  # , amt_to_decay=None):
         """
         Decay caffeine consumed some time ago
         before it gets added to current level.
@@ -174,16 +182,12 @@ class CaffeineMonitor:
         :return: net change rounded to 1 digit past decimal point
         Called by: process_item()
         """
-        if amt_to_decay is None:
-            amt_to_decay = self.mg_to_add
+        # amt_to_decay = self.mg_net_change
+        amt_to_decay = self.current_item['level']
 
-        # calculate the time at which caffeine was consumed
-        old_time = self.curr_time - timedelta(minutes=self.mins_ago)
-        minutes_elapsed = (self.curr_time - old_time) / timedelta(minutes=1)
-        if minutes_elapsed == 0:  # no time elapsed, so no decay
-            amount_left_after_decay = amt_to_decay
-        else:
-            amount_left_after_decay = amt_to_decay * pow(0.5, (minutes_elapsed / self.half_life))
+        # calculate the time since this consumption
+        minutes_elapsed = (self.current_time - self.current_item['when_to_process']).total_seconds() / 60
+        amount_left_after_decay = amt_to_decay * pow(0.5, (minutes_elapsed / self.half_life))
         self.mg_net_change = round(amount_left_after_decay, 1)
 
     def add_caffeine(self):
@@ -196,13 +200,13 @@ class CaffeineMonitor:
         self.write_log()
 
     def add_coffee(self):
-        quarter = self.mg_to_add / 4
+        self.mg_to_add_now = self.mg_to_add / 4
 
-        self.time_entered = self.curr_time
+        time_entered = self.current_time
 
         for i in range(4):
-            self.mg_net_change = quarter
-            self.time_to_process = self.time_entered + timedelta(minutes=i * COFFEE_MINS_DECREMENT)
+            self.mg_net_change = self.mg_to_add_now
+            self.when_to_process = time_entered + timedelta(minutes=i * COFFEE_MINS_DECREMENT)
             self.process_item()
 
     def add_soda(self):
@@ -213,49 +217,45 @@ class CaffeineMonitor:
         # First part (65%)
         first_amt = soda_amt * 0.65
         self.mg_net_change = first_amt
-        self.time_to_process = self.time_entered
+        self.when_to_process = self.time_entered
         self.process_item()
 
         # Second part (25%)
         second_amt = soda_amt * 0.25
         self.mg_net_change = second_amt
-        self.time_to_process = self.time_entered + timedelta(minutes=SODA_MINS_DECREMENT)
+        self.when_to_process = self.time_entered + timedelta(minutes=SODA_MINS_DECREMENT)
         self.process_item()
 
         # Third part (10%)
         third_amt = soda_amt * 0.1
         self.mg_net_change = third_amt
-        self.time_to_process = self.time_entered + timedelta(minutes=2 * SODA_MINS_DECREMENT)
+        self.when_to_process = self.time_entered + timedelta(minutes=2 * SODA_MINS_DECREMENT)
         self.process_item()
 
     def process_future_list(self):
-        self.future_list.sort(key=lambda x: x['time_to_process'], reverse=True)
+        self.future_list.sort(key=lambda x: x['when_to_process'], reverse=True)
         while self.future_list:
-            item = self.future_list.pop()
-            self.time_entered = item['time_entered']
-            self.time_to_process = item['time_to_process']
-            self.mg_net_change = item['level']
+            self.current_item = self.future_list.pop()
+            self.time_entered = self.current_item['time_entered']
+            self.when_to_process = self.current_item['when_to_process']
+            self.mg_net_change = self.current_item['level']
             self.process_item()
-        self.new_future_list.sort(key=lambda x: x['time_to_process'], reverse=True)
+        self.new_future_list.sort(key=lambda x: x['when_to_process'], reverse=True)
 
     def process_item(self):
         if self.mg_net_change == 0:
             return
 
-        # current_time = datetime.now()
-        current_time = self.curr_time
-
-        if self.time_to_process > current_time:  # item is still in the future
-            new_item = {"time_to_process": self.time_to_process, "time_entered": self.time_entered,
+        if self.when_to_process > self.current_time:  # item is still in the future
+            new_item = {"when_to_process": self.when_to_process, "time_entered": self.time_entered,
                         "level": self.mg_net_change}
             self.new_future_list.append(new_item)
-        elif self.time_to_process == current_time:  # item is in the present
+        elif self.when_to_process == self.current_time:  # item is in the present
             self.add_caffeine()
-        else:  # self.time_to_process < current_time:  # item is in the past
-            actual_mins_ago = (current_time - self.time_to_process).total_seconds() / 60
-            self.mins_ago = actual_mins_ago
-            self.mg_to_add = self.mg_net_change
-            self.decay_before_add()
+        else:  # self.when_to_process < current_time:  # item is in the past
+            self.mins_ago = (self.current_time - self.when_to_process).total_seconds() / 60
+            self.decay_before_add()  # Decay the mg_net_change value
+            # self.mg_to_add = self.mg_net_change  # Assign the decayed value to mg_to_add
             self.add_caffeine()
 
     def update_time(self):
@@ -264,14 +264,6 @@ class CaffeineMonitor:
         """
         self.data_dict['time'] = datetime.strftime(datetime.today(),
                                                    '%Y-%m-%d_%H:%M')
-
-    @property
-    def curr_time(self):
-        return self._curr_time
-
-    @curr_time.setter
-    def curr_time(self, new_time):
-        self._curr_time = new_time
 
     def __str__(self):
         return (f'Caffeine level is {round(self.data_dict["level"], 1)} '
