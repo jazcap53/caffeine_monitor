@@ -166,7 +166,7 @@ class CaffeineMonitor:
         self.data_dict['level'] *= pow(0.5, (minutes_elapsed /
                                              self.half_life))
 
-    def decay_before_add(self):  # , amt_to_decay=None):
+    def decay_before_add(self):
         """
         Decay caffeine consumed some time ago
         before it gets added to current level.
@@ -174,12 +174,11 @@ class CaffeineMonitor:
         :return: net change rounded to 1 digit past decimal point
         Called by: process_item()
         """
-        # amt_to_decay = self.mg_net_change
-        amt_to_decay = self.current_item['level']
+        amt_to_decay_local = self.current_item['level']
 
         # calculate the time since this consumption
         minutes_elapsed = (self.current_time - self.current_item['when_to_process']).total_seconds() / 60
-        amount_left_after_decay = amt_to_decay * pow(0.5, (minutes_elapsed / self.half_life))
+        amount_left_after_decay = amt_to_decay_local * pow(0.5, (minutes_elapsed / self.half_life))
         self.mg_net_change = round(amount_left_after_decay, 1)
 
     def add_caffeine(self, mg_to_add):
@@ -229,7 +228,7 @@ class CaffeineMonitor:
             self.process_item(self.current_item['level'])
         self.new_future_list.sort(key=lambda x: x['when_to_process'], reverse=True)
 
-    def process_item(self, mg_to_add):
+    def process_item(self, mg_to_add_local):
         if self.mg_net_change == 0:
             return
 
@@ -238,11 +237,11 @@ class CaffeineMonitor:
                         "level": self.mg_net_change}
             self.new_future_list.append(new_item)
         elif self.when_to_process == self.current_time:  # item is in the present
-            self.add_caffeine(mg_to_add)
+            self.add_caffeine(mg_to_add_local)
         else:  # self.when_to_process < current_time:  # item is in the past
             self.mins_ago = (self.current_time - self.when_to_process).total_seconds() / 60
             self.decay_before_add()
-            self.add_caffeine(mg_to_add)
+            self.add_caffeine(mg_to_add_local)
 
     def update_time(self):
         """
