@@ -140,16 +140,13 @@ class CaffeineMonitor:
 
         json.dump(serializable_data, self.iofile_future, indent=4)
 
-    def write_log(self):
-        """
-        Called by: self.add_caffeine()
-        """
+    def write_log(self, mg_to_add):
         log_mesg = (f'level is {round(self.data_dict["level"], 1)} '
                     f'at {self.data_dict["time"]}')
         if self.mg_net_change:
             mins_decayed = (self.current_time - self.when_to_process).total_seconds() / 60
 
-            log_mesg = (f'{self.mg_net_change:.1f} mg added ({self.mg_to_add_now} '
+            log_mesg = (f'{self.mg_net_change:.1f} mg added ({mg_to_add:.1f} '
                         f'mg, decayed {mins_decayed:.1f} mins): ' + log_mesg)
             logging.info(log_mesg)
         else:
@@ -185,48 +182,42 @@ class CaffeineMonitor:
         amount_left_after_decay = amt_to_decay * pow(0.5, (minutes_elapsed / self.half_life))
         self.mg_net_change = round(amount_left_after_decay, 1)
 
-    def add_caffeine(self):
+    def add_caffeine(self, mg_to_add):
         """
         Called by: self.add_coffee()
         """
         if not self.mg_net_change:
             return
         self.data_dict['level'] += self.mg_net_change
-        self.write_log()
+        self.write_log(mg_to_add)
 
     def add_coffee(self):
-        self.mg_to_add_now = self.mg_to_add / 4
-
-        # TODO: confusing -- change this variable name
+        mg_to_add_now = self.mg_to_add / 4
         time_entered = self.current_time
 
         for i in range(4):
-            self.mg_net_change = self.mg_to_add_now
+            self.mg_net_change = mg_to_add_now
             self.when_to_process = time_entered + timedelta(minutes=i * COFFEE_MINS_DECREMENT)
-            self.process_item()
+            self.process_item(mg_to_add_now)
 
     def add_soda(self):
         soda_amt = self.mg_to_add
-
         self.time_entered = datetime.now()
 
         # First part (65%)
-        first_amt = soda_amt * 0.65
-        self.mg_net_change = first_amt
+        self.mg_net_change = soda_amt * 0.65
         self.when_to_process = self.time_entered
-        self.process_item()
+        self.process_item(soda_amt * 0.65)
 
         # Second part (25%)
-        second_amt = soda_amt * 0.25
-        self.mg_net_change = second_amt
+        self.mg_net_change = soda_amt * 0.25
         self.when_to_process = self.time_entered + timedelta(minutes=SODA_MINS_DECREMENT)
-        self.process_item()
+        self.process_item(soda_amt * 0.25)
 
         # Third part (10%)
-        third_amt = soda_amt * 0.1
-        self.mg_net_change = third_amt
+        self.mg_net_change = soda_amt * 0.1
         self.when_to_process = self.time_entered + timedelta(minutes=2 * SODA_MINS_DECREMENT)
-        self.process_item()
+        self.process_item(soda_amt * 0.1)
 
     def process_future_list(self):
         self.future_list.sort(key=lambda x: x['when_to_process'], reverse=True)
@@ -235,10 +226,10 @@ class CaffeineMonitor:
             self.time_entered = self.current_item['time_entered']
             self.when_to_process = self.current_item['when_to_process']
             self.mg_net_change = self.current_item['level']
-            self.process_item()
+            self.process_item(self.current_item['level'])
         self.new_future_list.sort(key=lambda x: x['when_to_process'], reverse=True)
 
-    def process_item(self):
+    def process_item(self, mg_to_add):
         if self.mg_net_change == 0:
             return
 
@@ -247,12 +238,11 @@ class CaffeineMonitor:
                         "level": self.mg_net_change}
             self.new_future_list.append(new_item)
         elif self.when_to_process == self.current_time:  # item is in the present
-            self.add_caffeine()
+            self.add_caffeine(mg_to_add)
         else:  # self.when_to_process < current_time:  # item is in the past
             self.mins_ago = (self.current_time - self.when_to_process).total_seconds() / 60
-            self.decay_before_add()  # Decay the mg_net_change value
-            # self.mg_to_add = self.mg_net_change  # Assign the decayed value to mg_to_add
-            self.add_caffeine()
+            self.decay_before_add()
+            self.add_caffeine(mg_to_add)
 
     def update_time(self):
         """
