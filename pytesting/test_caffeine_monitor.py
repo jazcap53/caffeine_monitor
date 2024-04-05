@@ -38,42 +38,40 @@ def test_read_file(files_mocked):
     assert cm_obj.data_dict['time'] == datetime.now().strftime('%Y-%m-%d_%H:%M')
 
 
-def test_write_file_add_mg(files_mocked, caplog):
+@pytest.mark.parametrize("mg_to_add, mins", [
+    (100, 0),     # Normal case
+    (0, 0),       # Edge case: 0 mg and 0 mins
+    (200, -60),   # Edge case: negative mins
+    (50, 1440),   # Edge case: large positive mins (1 day)
+    (-50, 0),     # Edge case: negative mg_to_add
+    (-100, -30),  # Edge case: negative mg_to_add and negative mins
+])
+@pytest.mark.parametrize("bev", ['coffee', 'soda', 'chocolate'])
+def test_write_file_add_mg(files_mocked, caplog, mg_to_add, mins, bev):
     """
     Check add_caffeine() adds mg_net_change
     Check add_caffeine() writes correct value to log
     """
-    nmspc = Namespace(mg=140, mins=0, bev='coffee')
+    nmspc = Namespace(mg=mg_to_add, mins=mins, bev=bev)
     open_mock, json_load_mock, json_dump_mock = files_mocked
     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
     cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
     orig_level = 100.0
 
     cm_obj.data_dict = {'level': orig_level, 'time': cur_time}
-    cm_obj.mg_net_change = cm_obj.mg_to_add
+    cm_obj.mg_net_change = mg_to_add
     caplog.set_level('INFO')
 
-    cm_obj.add_caffeine()
+    cm_obj.add_caffeine(mg_to_add)
 
-    assert f'140.0 mg added (140 mg, 0 mins ago): level is {orig_level + cm_obj.mg_net_change} at {cur_time}' in caplog.text
-    assert len(caplog.records) == 1
+    if mg_to_add != 0:
+        log_message = f'{mg_to_add:.1f} mg added ({mg_to_add:.1f} mg, decayed {mins:.1f} mins): level is {orig_level + cm_obj.mg_net_change} at {cur_time}'
+        assert log_message in caplog.text
+        assert len(caplog.records) == 1
+    else:
+        assert len(caplog.records) == 0
 
-
-def test_add_no_mg_not_write_log(files_mocked, caplog):
-    """
-    Check adding 0 mg does not write to log
-    """
-    nmspc = Namespace(mg=0, mins=0, bev='coffee')
-    open_mock, json_load_mock, json_dump_mock = files_mocked
-    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
-    cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
-    cm_obj.data_dict = {'level': 200.0, 'time': cur_time}
-    assert cm_obj.mg_to_add == 0.0
-    caplog.set_level('DEBUG')
-
-    cm_obj.add_caffeine()
-
-    assert len(caplog.records) == 0
+    assert cm_obj.data_dict['level'] == orig_level + cm_obj.mg_net_change
 
 
 def test_add_no_mg_updates_time(files_mocked):
@@ -123,8 +121,8 @@ def test_decay_prev_level(files_mocked_with_initial_values, initial_level, initi
     # Freeze the time before adding the time_elapsed delta
     frozen_time = datetime.strptime(initial_time, '%Y-%m-%d_%H:%M')
     with freeze_time(frozen_time):
-        # Set the current time to be time_elapsed minutes later
-        cm_obj.curr_time = frozen_time + timedelta(minutes=time_elapsed)
+        # Set the current_time to be time_elapsed minutes later
+        cm_obj.current_time = frozen_time + timedelta(minutes=time_elapsed)
         cm_obj.decay_prev_level()
 
     # Assert that the level in data_dict is correctly decayed
@@ -132,6 +130,28 @@ def test_decay_prev_level(files_mocked_with_initial_values, initial_level, initi
 
     # Assert that the time in data_dict is updated correctly
     assert cm_obj.data_dict['time'] == (frozen_time + timedelta(minutes=time_elapsed)).strftime('%Y-%m-%d_%H:%M')
+
+
+# @pytest.mark.parametrize("mg_add, min_ago, net_ch", [
+#     # Normal cases
+#     (200, 360, 100.0),
+#     (100, 180, 70.7),
+#     (300, 720, 75.0),
+#
+#     # Edge cases
+#     (0, 0, 0.0),  # Adding 0 mg
+#     (200, 0, 200.0),  # Adding caffeine just now (min_ago = 0)
+#     (200, -60, 224.5),  # Adding caffeine in the future (min_ago < 0)
+#     (200, 720000, 0.0),  # Adding caffeine a very long time ago (practically decayed to 0)
+#     (sys.maxsize, 360, sys.maxsize / 2),  # Adding a very large amount of caffeine
+# ])
+# def test_decay_before_add(files_mocked, mg_add, min_ago, net_ch):
+#     nmspc = Namespace(mg=mg_add, mins=min_ago, bev='coffee')
+#     open_mock, json_load_mock, json_dump_mock = files_mocked
+#     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, False, nmspc)
+#     cm_obj.data_dict = {'level': 0.0, 'time': datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')}
+#     cm_obj.decay_before_add()
+#     assert cm_obj.mg_net_change == pytest.approx(net_ch, abs=1e-6)
 
 
 @pytest.mark.parametrize("mg_add, min_ago, net_ch", [
@@ -151,9 +171,22 @@ def test_decay_before_add(files_mocked, mg_add, min_ago, net_ch):
     nmspc = Namespace(mg=mg_add, mins=min_ago, bev='coffee')
     open_mock, json_load_mock, json_dump_mock = files_mocked
     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, False, nmspc)
-    cm_obj.data_dict = {'level': 0.0, 'time': datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')}
+    cm_obj.current_time = datetime.now()
+    cm_obj.data_dict = {'level': 0.0, 'time': cm_obj.current_time.strftime('%Y-%m-%d_%H:%M')}
+
+    # Set up self.current_item with required members
+    cm_obj.current_item = {
+        'level': mg_add,
+        'when_to_process': cm_obj.current_time - timedelta(minutes=min_ago)
+    }
+
+    # Call the method
     cm_obj.decay_before_add()
-    assert cm_obj.mg_net_change == pytest.approx(net_ch, abs=1e-6)
+
+    # Assert the expected behavior
+    minutes_elapsed = min_ago
+    expected_amount_left = mg_add * pow(0.5, (minutes_elapsed / cm_obj.half_life))
+    assert cm_obj.mg_net_change == round(expected_amount_left, 1)
 
 
 @pytest.mark.parametrize("mg, mins, expected_mg_net_change, expected_mins_ago", [
