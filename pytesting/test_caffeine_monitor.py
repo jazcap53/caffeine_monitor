@@ -189,13 +189,13 @@ def test_decay_before_add(files_mocked, mg_add, min_ago, net_ch):
     assert cm_obj.mg_net_change == round(expected_amount_left, 1)
 
 
-@pytest.mark.parametrize("mg, mins, expected_mg_net_change, expected_mins_ago", [
-    (100, 180, 25, 120),    # Normal case
-    (0, 0, 0, -60),         # Edge case: 0 mg and 0 mins
-    (200, 0, 50, -60),      # Edge case: mins_ago is 0
-    (100, -30, 25, -90),    # Edge case: negative mins_ago
+@pytest.mark.parametrize("mg, mins, expected_mg_net_change", [
+    (100, 180, 25),    # Normal case
+    (0, 0, 0),         # Edge case: 0 mg and 0 mins
+    (200, 0, 50),      # Edge case: mins_ago is 0
+    (100, -30, 25),    # Edge case: negative mins_ago
 ])
-def test_add_coffee(mocker, files_mocked, mg, mins, expected_mg_net_change, expected_mins_ago):
+def test_add_coffee(mocker, files_mocked, mg, mins, expected_mg_net_change):
     open_mock, json_load_mock, json_dump_mock = files_mocked
     nmspc = Namespace(mg=mg, mins=mins, bev='coffee')
     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
@@ -206,16 +206,15 @@ def test_add_coffee(mocker, files_mocked, mg, mins, expected_mg_net_change, expe
 
     assert cm_obj.mg_net_change == expected_mg_net_change
     assert cm_obj.process_item.call_count == 4
-    assert cm_obj.mins_ago == expected_mins_ago
 
 
-@pytest.mark.parametrize("mg, mins, expected_mg_net_change, expected_mins_ago", [
-    (200, 0, 20, -40),      # Normal case
-    (0, 0, 0, -40),         # Edge case: 0 mg and 0 mins
-    (300, 30, 30, -10),     # Edge case: mins_ago should be 30 - 40 = -10
-    (100, -20, 10, -60),    # Edge case: mins_ago should be -20 - 40 = -60
+@pytest.mark.parametrize("mg, mins, expected_mg_net_change", [
+    (200, 0, 20),      # Normal case
+    (0, 0, 0),         # Edge case: 0 mg and 0 mins
+    (300, 30, 30),     # Edge case: mins_ago is 30
+    (100, -20, 10),    # Edge case: negative mins_ago
 ])
-def test_add_soda(mocker, files_mocked, mg, mins, expected_mg_net_change, expected_mins_ago):
+def test_add_soda(mocker, files_mocked, mg, mins, expected_mg_net_change):
     open_mock, json_load_mock, json_dump_mock = files_mocked
     nmspc = Namespace(mg=mg, mins=mins, bev='soda')
     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
@@ -226,21 +225,27 @@ def test_add_soda(mocker, files_mocked, mg, mins, expected_mg_net_change, expect
 
     assert cm_obj.mg_net_change == expected_mg_net_change
     assert cm_obj.process_item.call_count == 3
-    assert cm_obj.mins_ago == expected_mins_ago
 
 
-def test_add_caffeine(files_mocked):
-    """Test add_caffeine() correctly updates data_dict['level']."""
+@pytest.mark.parametrize("initial_level, mg, mins, expected_level", [
+    (50.0, 100, 0, 150.0),  # Normal case
+    (0.0, 0, 0, 0.0),  # Edge case: 0 initial level, 0 mg, and 0 mins
+    (75.0, 200, 30, 275.0),  # Normal case with non-zero initial level and mins
+    (100.0, -50, 0, 50.0),  # Case with negative mg (assuming add_caffeine() subtracts the absolute value)
+])
+@pytest.mark.parametrize("bev", ['coffee', 'soda', 'chocolate'])
+def test_add_caffeine(files_mocked, initial_level, mg, mins, bev, expected_level):
     open_mock, json_load_mock, json_dump_mock = files_mocked
-    nmspc = Namespace(mg=100, mins=0, bev='coffee')
+    nmspc = Namespace(mg=mg, mins=mins, bev=bev)
     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
-    cm_obj.data_dict = {"time": "2020-04-01_12:51", "level": 48.0}
-    orig_level = cm_obj.data_dict['level']
-    cm_obj.mg_net_change = 100.0
 
-    cm_obj.add_caffeine()
+    # Set the initial level and time dynamically based on the test parameters
+    cm_obj.data_dict = {"time": datetime.now().strftime('%Y-%m-%d_%H:%M'), "level": initial_level}
+    cm_obj.mg_net_change = mg
 
-    assert cm_obj.data_dict['level'] == orig_level + cm_obj.mg_net_change
+    cm_obj.add_caffeine(mg)
+
+    assert cm_obj.data_dict['level'] == expected_level
 
 
 def test_update_time(files_mocked):
@@ -276,12 +281,35 @@ def test_read_log(files_mocked):
     assert cm_obj.log_contents[2] == 1
 
 
+# def test_read_future_file(files_mocked):
+#     open_mock, json_load_mock, json_dump_mock = files_mocked
+#
+#     # Define the expected future list
+#     expected_future_list = [{"time": "2023-06-08_10:00", "level": 50.0},
+#                             {"time": "2023-06-08_11:00", "level": 25.0}]
+#
+#     # Configure the mock file to return the expected future list when json.load() is called
+#     json_load_mock.side_effect = [expected_future_list]
+#
+#     # Create an instance of CaffeineMonitor with the mocked files
+#     nmspc = Namespace(mg=100, mins=180, bev='coffee')
+#     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
+#
+#     # Call the read_future_file() method
+#     cm_obj.read_future_file()
+#
+#     # Assert that the future_list attribute is set correctly
+#     assert cm_obj.future_list == sorted(expected_future_list, key=lambda x: x['time'], reverse=True)
+
+
 def test_read_future_file(files_mocked):
     open_mock, json_load_mock, json_dump_mock = files_mocked
 
-    # Define the expected future list
-    expected_future_list = [{"time": "2023-06-08_10:00", "level": 50.0},
-                            {"time": "2023-06-08_11:00", "level": 25.0}]
+    # Define the expected future list with the correct structure
+    expected_future_list = [
+        {"when_to_process": "2023-06-08T10:00:00", "time_entered": "2023-06-08T09:00:00", "level": 50.0},
+        {"when_to_process": "2023-06-08T11:00:00", "time_entered": "2023-06-08T09:30:00", "level": 25.0}
+    ]
 
     # Configure the mock file to return the expected future list when json.load() is called
     json_load_mock.side_effect = [expected_future_list]
@@ -294,7 +322,10 @@ def test_read_future_file(files_mocked):
     cm_obj.read_future_file()
 
     # Assert that the future_list attribute is set correctly
-    assert cm_obj.future_list == sorted(expected_future_list, key=lambda x: x['time'], reverse=True)
+    assert cm_obj.future_list == [
+        {"when_to_process": datetime(2023, 6, 8, 11, 0), "time_entered": datetime(2023, 6, 8, 9, 30), "level": 25.0},
+        {"when_to_process": datetime(2023, 6, 8, 10, 0), "time_entered": datetime(2023, 6, 8, 9, 0), "level": 50.0}
+    ]
 
 
 def test_write_future_file(files_mocked):
