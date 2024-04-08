@@ -232,6 +232,9 @@ class CaffeineMonitor:
         if self.mg_net_change == 0:
             return
 
+        if self.time_entered >= self.current_time:
+            raise ValueError("time_entered cannot be in the future")
+
         if self.when_to_process > self.current_time:  # item is still in the future
             new_item = {"when_to_process": self.when_to_process, "time_entered": self.time_entered,
                         "level": self.mg_net_change}
