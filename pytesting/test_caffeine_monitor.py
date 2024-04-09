@@ -405,37 +405,163 @@ def create_namespace(mg, mins, bev):
     return Namespace(mg=mg, mins=mins, bev=bev)
 
 
-@pytest.mark.parametrize("mg, mins, bev, first_run", [
-    (100, 0, 'coffee', True),
-    (50, 30, 'soda', False),
-    (0, 0, 'chocolate', True),
-    (200, -60, 'coffee', False),
-])
-@pytest.mark.parametrize("mg_net_change, mins_ago, expected_level, expected_new_future_list", [
-    # ... (previous test cases)
-])
-def test_process_item(files_mocked, mg, mins, bev, first_run, mg_net_change, mins_ago, expected_level,
-                      expected_new_future_list):
-    # Arrange
-    ags = create_namespace(mg, mins, bev)
-    cm_obj = CaffeineMonitor(*files_mocked, first_run, ags)
-    cm_obj.mg_net_change = mg_net_change
-    cm_obj.mins_ago = mins_ago
+def test_process_item_common_cases(files_mocked):
+    # Test case 1: Item is in the past and should be processed, updating the level
+    nmspc = Namespace(mg=100, mins=0, bev="coffee")
+    cm_obj = CaffeineMonitor(*files_mocked, True, nmspc)
+    cm_obj.mg_net_change = 50.0
+    cm_obj.mins_ago = 60
     cm_obj.new_future_list = []
-
-    # Set up a mock current_item dictionary
+    cm_obj.data_dict = {'level': 100.0, 'time': datetime.now().strftime('%Y-%m-%d_%H:%M')}  # Initialize data_dict with default values
     cm_obj.current_item = {
-        'level': mg_net_change,
-        'when_to_process': datetime.now() - timedelta(minutes=mins_ago),
-        'time_entered': datetime.now()
+        "level": cm_obj.mg_net_change,
+        "when_to_process": datetime.now() - timedelta(minutes=cm_obj.mins_ago),
+        "time_entered": datetime.now(),
     }
+    cm_obj.process_item(cm_obj.mg_net_change)
+    assert cm_obj.data_dict["level"] == 150.0
+    assert cm_obj.new_future_list == []
 
-    # Act
-    cm_obj.process_item(mg_net_change)
+    # Test case 2: Item is in the future and should be added to new_future_list
+    nmspc = Namespace(mg=50, mins=30, bev="soda")
+    cm_obj = CaffeineMonitor(*files_mocked, False, nmspc)
+    cm_obj.mg_net_change = 25.0
+    cm_obj.mins_ago = -30
+    cm_obj.new_future_list = []
+    cm_obj.data_dict = {'level': 100.0, 'time': datetime.now().strftime('%Y-%m-%d_%H:%M')}  # Initialize data_dict with default values
+    cm_obj.current_item = {
+        "level": cm_obj.mg_net_change,
+        "when_to_process": datetime.now() - timedelta(minutes=cm_obj.mins_ago),
+        "time_entered": datetime.now(),
+    }
+    cm_obj.process_item(cm_obj.mg_net_change)
+    assert cm_obj.data_dict["level"] == 100.0
+    assert cm_obj.new_future_list == [
+        {
+            "when_to_process": datetime(2023, 6, 8, 10, 30),
+            "time_entered": datetime(2023, 6, 8, 9, 0),
+            "level": 25.0,
+        }
+    ]
 
-    # Assert
-    assert cm_obj.data_dict["level"] == expected_level
-    assert cm_obj.new_future_list == expected_new_future_list
+    # Test case 3: Item is in the present and should be processed, updating the level
+    nmspc = Namespace(mg=200, mins=0, bev="coffee")
+    cm_obj = CaffeineMonitor(*files_mocked, False, nmspc)
+    cm_obj.mg_net_change = 100.0
+    cm_obj.mins_ago = 0
+    cm_obj.new_future_list = []
+    cm_obj.data_dict = {'level': 100.0, 'time': datetime.now().strftime('%Y-%m-%d_%H:%M')}  # Initialize data_dict with default values
+    cm_obj.current_item = {
+        "level": cm_obj.mg_net_change,
+        "when_to_process": datetime.now() - timedelta(minutes=cm_obj.mins_ago),
+        "time_entered": datetime.now(),
+    }
+    cm_obj.process_item(cm_obj.mg_net_change)
+    assert cm_obj.data_dict["level"] == 200.0
+    assert cm_obj.new_future_list == []
+
+
+def test_process_item_edge_cases(files_mocked):
+    # Test case 1: Item with zero mg_net_change should not affect the level
+    nmspc = Namespace(mg=0, mins=0, bev="coffee")
+    cm_obj = CaffeineMonitor(*files_mocked, True, nmspc)
+    cm_obj.mg_net_change = 0.0
+    cm_obj.mins_ago = 60
+    cm_obj.new_future_list = []
+    cm_obj.data_dict = {'level': 100.0, 'time': datetime.now().strftime('%Y-%m-%d_%H:%M')}  # Initialize data_dict with default values
+    cm_obj.current_item = {
+        "level": cm_obj.mg_net_change,
+        "when_to_process": datetime.now() - timedelta(minutes=cm_obj.mins_ago),
+        "time_entered": datetime.now(),
+    }
+    cm_obj.process_item(cm_obj.mg_net_change)
+    assert cm_obj.data_dict["level"] == 100.0
+    assert cm_obj.new_future_list == []
+
+    # Test case 2: Item with 1 day (1440 minutes) ago should not affect the level due to decay
+    nmspc = Namespace(mg=100, mins=1440, bev="coffee")
+    cm_obj = CaffeineMonitor(*files_mocked, False, nmspc)
+    cm_obj.mg_net_change = 75.0
+    cm_obj.mins_ago = 1440
+    cm_obj.new_future_list = []
+    cm_obj.data_dict = {'level': 100.0, 'time': datetime.now().strftime('%Y-%m-%d_%H:%M')}  # Initialize data_dict with default values
+    cm_obj.current_item = {
+        "level": cm_obj.mg_net_change,
+        "when_to_process": datetime.now() - timedelta(minutes=cm_obj.mins_ago),
+        "time_entered": datetime.now(),
+    }
+    cm_obj.process_item(cm_obj.mg_net_change)
+    assert cm_obj.data_dict["level"] == 100.0
+    assert cm_obj.new_future_list == []
+
+    # Test case 3: Item with 1 day (-1440 minutes) in the future should be added to new_future_list
+    nmspc = Namespace(mg=50, mins=-1440, bev="soda")
+    cm_obj = CaffeineMonitor(*files_mocked, False, nmspc)
+    cm_obj.mg_net_change = 50.0
+    cm_obj.mins_ago = -1440
+    cm_obj.new_future_list = []
+    cm_obj.data_dict = {'level': 100.0, 'time': datetime.now().strftime('%Y-%m-%d_%H:%M')}  # Initialize data_dict with default values
+    cm_obj.current_item = {
+        "level": cm_obj.mg_net_change,
+        "when_to_process": datetime.now() - timedelta(minutes=cm_obj.mins_ago),
+        "time_entered": datetime.now(),
+    }
+    cm_obj.process_item(cm_obj.mg_net_change)
+    assert cm_obj.data_dict["level"] == 100.0
+    assert cm_obj.new_future_list == [
+        {
+            "when_to_process": datetime(2023, 6, 7, 9, 0),
+            "time_entered": datetime(2023, 6, 8, 9, 0),
+            "level": 50.0,
+        }
+    ]
+
+    # Test case 4: Item with zero mg_net_change and zero mins_ago should not affect the level
+    nmspc = Namespace(mg=0, mins=0, bev="coffee")
+    cm_obj = CaffeineMonitor(*files_mocked, True, nmspc)
+    cm_obj.mg_net_change = 0.0
+    cm_obj.mins_ago = 0
+    cm_obj.new_future_list = []
+    cm_obj.data_dict = {'level': 100.0, 'time': datetime.now().strftime('%Y-%m-%d_%H:%M')}  # Initialize data_dict with default values
+    cm_obj.current_item = {
+        "level": cm_obj.mg_net_change,
+        "when_to_process": datetime.now() - timedelta(minutes=cm_obj.mins_ago),
+        "time_entered": datetime.now(),
+    }
+    cm_obj.process_item(cm_obj.mg_net_change)
+    assert cm_obj.data_dict["level"] == 100.0
+    assert cm_obj.new_future_list == []
+
+    # Test case 5: Item with None mg_net_change should not affect the level
+    nmspc = Namespace(mg=100, mins=60, bev="coffee")
+    cm_obj = CaffeineMonitor(*files_mocked, False, nmspc)
+    cm_obj.mg_net_change = None
+    cm_obj.mins_ago = 60
+    cm_obj.new_future_list = []
+    cm_obj.data_dict = {'level': 100.0, 'time': datetime.now().strftime('%Y-%m-%d_%H:%M')}  # Initialize data_dict with default values
+    cm_obj.current_item = {
+        "level": cm_obj.mg_net_change,
+        "when_to_process": datetime.now() - timedelta(minutes=cm_obj.mins_ago),
+        "time_entered": datetime.now(),
+    }
+    cm_obj.process_item(cm_obj.mg_net_change)
+    assert cm_obj.data_dict["level"] == 100.0
+    assert cm_obj.new_future_list == []
+
+    # Test case 6: Item with None mins_ago should raise an exception
+    nmspc = Namespace(mg=50, mins=None, bev="soda")
+    cm_obj = CaffeineMonitor(*files_mocked, False, nmspc)
+    cm_obj.mg_net_change = 50.0
+    cm_obj.mins_ago = None
+    cm_obj.new_future_list = []
+    cm_obj.data_dict = {'level': 100.0, 'time': datetime.now().strftime('%Y-%m-%d_%H:%M')}  # Initialize data_dict with default values
+    cm_obj.current_item = {
+        "level": cm_obj.mg_net_change,
+        "when_to_process": datetime.now(),
+        "time_entered": datetime.now(),
+    }
+    with pytest.raises(Exception):
+        cm_obj.process_item(cm_obj.mg_net_change)
 
 
 @pytest.mark.parametrize("future_list, expected_new_future_list", [
@@ -457,15 +583,23 @@ def test_process_future_list(mocker, files_mocked, future_list, expected_new_fut
     cm_obj.new_future_list = []
     cm_obj.curr_time = datetime(2023, 6, 8, 9, 0)  # Set current_time one hour later than time_entered
 
-    # Mock the process_item() method
-    mock_process_item = mocker.patch.object(cm_obj, 'process_item')
+    # Store the initial length of future_list
+    initial_future_list_length = len(future_list)
+
+    # Mock the process_item() method with a side effect
+    def process_item_side_effect(mg_to_add_local):
+        if cm_obj.when_to_process > cm_obj.curr_time:
+            new_item = {"when_to_process": cm_obj.when_to_process, "time_entered": cm_obj.time_entered, "level": mg_to_add_local}
+            cm_obj.new_future_list.append(new_item)
+
+    mock_process_item = mocker.patch.object(cm_obj, 'process_item', side_effect=process_item_side_effect)
 
     # Act
     cm_obj.process_future_list()
 
     # Assert
     assert cm_obj.new_future_list == expected_new_future_list
-    assert mock_process_item.call_count == len(cm_obj.new_future_list)
+    assert mock_process_item.call_count == initial_future_list_length
 
 
 class TestCaffeineMonitorMain:
