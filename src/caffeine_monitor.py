@@ -93,7 +93,9 @@ class CaffeineMonitor:
         """Read initial time and caffeine level from file"""
         self.data_dict = json.load(self.iofile)
         if not self.data_dict:
-            self.data_dict = {'time': datetime.now(), 'level': 0.0}
+            self.data_dict = {'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 'level': 0.0}
+        else:
+            self.data_dict['time'] = datetime.strptime(self.data_dict['time'].strip(), '%Y-%m-%d %H:%M:%S')
 
     def read_future_file(self):
         """Read future changes from file"""
@@ -102,8 +104,8 @@ class CaffeineMonitor:
             self.future_list = sorted(
                 [
                     {
-                        'when_to_process': datetime.fromisoformat(item['when_to_process']),
-                        'time_entered': datetime.fromisoformat(item['time_entered']),
+                        'when_to_process': datetime.strptime(item['when_to_process'], '%Y-%m-%d %H:%M:%S'),
+                        'time_entered': datetime.strptime(item['time_entered'], '%Y-%m-%d %H:%M:%S'),
                         'level': item['level']
                     }
                     for item in future_data
@@ -121,18 +123,21 @@ class CaffeineMonitor:
     def write_file(self):
         self.iofile.seek(0)
         self.iofile.truncate(0)
-        json.dump(self.data_dict, self.iofile)
+        serializable_data = {
+            'time': self.data_dict['time'].strftime('%Y-%m-%d %H:%M:%S'),
+            'level': self.data_dict['level']
+        }
+        json.dump(serializable_data, self.iofile)
 
     def write_future_file(self):
         self.iofile_future.seek(0)
         self.iofile_future.truncate()
         self.new_future_list.sort(key=lambda x: x['when_to_process'], reverse=True)
 
-        # Convert datetime objects to ISO 8601 formatted strings
         serializable_data = [
             {
-                'when_to_process': item['when_to_process'].isoformat(),
-                'time_entered': item['time_entered'].isoformat(),
+                'when_to_process': item['when_to_process'].strftime('%Y-%m-%d %H:%M:%S'),
+                'time_entered': item['time_entered'].strftime('%Y-%m-%d %H:%M:%S'),
                 'level': item['level']
             }
             for item in self.new_future_list
@@ -142,7 +147,7 @@ class CaffeineMonitor:
 
     def write_log(self, mg_to_add):
         log_mesg = (f'level is {round(self.data_dict["level"], 1)} '
-                    f'at {self.data_dict["time"]}')
+                    f'at {self.data_dict["time"].strftime("%Y-%m-%d %H:%M:%S")}')
         if self.mg_net_change:
             mins_decayed = (self.current_time - self.when_to_process).total_seconds() / 60
 
@@ -157,14 +162,10 @@ class CaffeineMonitor:
         Reduce stored level to account for decay since that value
         was written
         """
-        stored_time = datetime.strptime(self.data_dict['time'],
-                                        '%Y-%m-%d_%H:%M')
-        minutes_elapsed = (self.current_time -
-                           stored_time) / timedelta(minutes=1)
-        self.data_dict['time'] = datetime.strftime(self.current_time,
-                                                   '%Y-%m-%d_%H:%M')
-        self.data_dict['level'] *= pow(0.5, (minutes_elapsed /
-                                             self.half_life))
+        stored_time = datetime.strptime(self.data_dict['time'], '%Y-%m-%d %H:%M:%S')
+        minutes_elapsed = (self.current_time - stored_time) / timedelta(minutes=1)
+        self.data_dict['time'] = self.current_time.strftime('%Y-%m-%d %H:%M:%S')
+        self.data_dict['level'] *= pow(0.5, (minutes_elapsed / self.half_life))
 
     def decay_before_add(self):
         """
@@ -251,12 +252,11 @@ class CaffeineMonitor:
         Called by: main()
         """
         self.data_dict['time'] = datetime.strftime(datetime.today(),
-                                                   '%Y-%m-%d_%H:%M')
+                                                   '%Y-%m-%d %H:%M:%S')
 
     def __str__(self):
         return (f'Caffeine level is {round(self.data_dict["level"], 1)} '
-                f'mg at time {self.data_dict["time"]}')
-
+                f'mg at time {self.data_dict["time"].strftime("%Y-%m-%d %H:%M:%S")}')
 
 if __name__ == '__main__':
     log_filename, json_filename, json_filename_future, first_run, args = set_up()
