@@ -1,24 +1,29 @@
-Below the line of ampersands is the code to a program that lets the user track the level of caffeine in their body, as well as some tests 
-to test that code using pytest.
+Below the line of ampersands is the code to a program that lets the user track the level of caffeine in
+their body, as well as a test suite using Pytest.
 
-The program maintains three environments: "prod" for production, "tests" for development, and "pytesting" for unit tests.
- 
-The production and development environments each maintain three I/O files: a log file, a JSON  file with the user's caffeine level at the
-last time the code was run, and a second JSON file that lists additions to the user's level to be made in the future.
+The program maintains three environments: "prod" for production, "devel" for development, and "pytesting" for
+unit tests.
 
-The pytesting environment maintains on I/O files; the unit tests do not touch the file system.
+The production and development environments each maintain three I/O files: a log file, a JSON  file with
+the user's caffeine level at the last time the code was run, and a second JSON file that lists additions
+to the user's level to be made in the future.
 
-When desired, the developer can run `rm tests/*.log, tests/*.json` at a Linux command prompt, to remove these files and simulate first run of 
-the program.
+The pytesting environment maintains no I/O files; the unit tests do not touch the file system.
 
-Thereafter, a call to `python src/caffeine_monitor.py -t 100` should divide `100` into 4 equal parts, write the first part to 
-"tests/caff_test.json", and add the remaining three parts to "tests/caff_test_future.json" as a list of dicts.  In addition, if 
-there are any levels in "tests/caff_test_future.json" that are now in the past, these values should be removed from 
-"caff_test_future.json", decayed, and added to the level in "caff_test.json". Each addition should be logged in "caff_test.log".
+When desired, the developer can run `rm devel/*.log, devel/*.json` at a Linux command prompt, to remove
+these files and simulate first run of the program.
 
-A later call to `python src/caffeine_monitor.py -t` should read the most recent level from "caff_test.json", decay this value to 
-account for the reduction in caffeine level since the file was last written, read any level values from "caff_test_future.json" 
-whose time values are now in the past or in the present, decay these new levels, sum the decayed value from "caff_test.json" with 
-the decayed values from "caff_test_future.json", output this sum to the user, and overwrite the contents of "caff_test.json" with 
-this same sum. All additions to "caff_test.json" should be logged in "caff_test.log".
+Thereafter, a call to `python src/caffeine_monitor.py -d 100` should divide `100` into 4 equal parts, write
+the first part to "devel/caff_devel.json", and add the remaining three parts to
+"devel/caff_devel_future.json" as a list of dicts.  In addition, if there are any levels in
+"devel/caff_devel_future.json" that are now in the past, these values should be removed from
+"caff_devel_future.json", decayed, and added to the level in "caff_devel.json". Each addition should be
+logged in "caff_devel.log".
+
+A later call to `python src/caffeine_monitor.py -t` should read the most recent level from "caff_devel.json",
+decay this value to account for the reduction in caffeine level since the file was last written, read any
+level values from "caff_devel_future.json" whose time values are now in the past or in the present, decay
+these new levels, sum the decayed value from "caff_devel.json" with the decayed values from
+"caff_devel_future.json", output this sum to the user, and overwrite the contents of "caff_devel.json" with
+this same sum. All additions to "caff_devel.json" should be logged in "caff_devel.log".
 

@@ -1,16 +1,60 @@
 
 
-We have written a suite of unit tests for this program using Pytest. I'm getting ready to do some refactoring as a next step.
+Because I detected certain inaccuracies in the program's output, we refactored. The new code is ugly, but has run
+correctly so far in manual testing.
 
-The program was designed to ensure that unit testing and code development do not interfere with the production code and data. 
+Before the refactoring, the program ran without error; the tests all passed, and the I/O seemed to be working as
+intended when the code was written.
 
-Some features that were implemented with this goal in mind include:
-    - placing input and output files in separate directories, with different file names, for the production, test, and pytesting environments.
-    - having the selection of the environment controlled by the value of the CAFF_ENV environment variable
-    - having the selection of the environment further controlled by command-line flags
-    - making sure that the command-line flags given by the user are correct for the current value of CAFF_ENV
-    - ensuring that the unit tests do not touch the file system 
+However, the new code was failing 70 of 125 unit tests. Since many of the failures are parameterizations, only
+eleven tests actually needed to be fixed.
 
-Is it necessary to take futher steps to ensure that these three environments are kept separate? If so, what steps would you recommend?
+At present, the code is failing `test_caffeine_monitor.py::test_process_item_mins_ago_none`. Here is Pytest's
+failure message:
 
+
+
+__________________________________________________________ test_process_item_mins_ago_none ___________________________________________________________
+
+files_mocked = (<MagicMock name='open' spec='builtin_function_or_method' id='124185379662832'>, <MagicMock name='load' id='124185380041344'>, <MagicMock name='dump' id='124185379695312'>)
+
+    def test_process_item_mins_ago_none(files_mocked):
+        nmspc = Namespace(mg=50, mins=None, bev="soda")
+>       cm_obj = CaffeineMonitor(*files_mocked, False, nmspc)
+
+pytesting/test_caffeine_monitor.py:521:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <caffeine_monitor.src.caffeine_monitor.CaffeineMonitor object at 0x70f229716c20>
+logfile = <MagicMock name='open' spec='builtin_function_or_method' id='124185379662832'>, iofile = <MagicMock name='load' id='124185380041344'>
+iofile_future = <MagicMock name='dump' id='124185379695312'>, first_run = False, ags = Namespace(mg=50, mins=None, bev='soda')
+
+    def __init__(self, logfile, iofile, iofile_future, first_run, ags):
+        """
+        # :param logfile: an opened file handle
+        # :param iofile: an opened file handle
+        # :param iofile_future: an opened file handle
+        :param ags: an argparse.Namespace object with .mg as the amount
+                    of caffeine consumed, .mins as how long ago the
+                    caffeine was consumed, and .bev as the beverage
+        """
+        self.logfile = logfile
+        self.iofile = iofile
+        self.iofile_future = iofile_future
+        self.data_dict = {}  # data to be read from and dumped to .json file
+        self.mg_to_add = int(ags.mg)
+        self.mg_to_add_now = 0.0
+>       self.mins_ago = int(ags.mins)
+E       TypeError: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'
+
+src/caffeine_monitor.py:40: TypeError
+============================================================== short test summary info ===============================================================
+FAILED pytesting/test_caffeine_monitor.py::test_process_item_mins_ago_none - TypeError: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'
+
+
+
+My opinion is that the test is unnecessary, since the argument parsing logic in `utils.py` will not
+allow the value of `mg` to be `None`.
+
+Am I correct?
 
