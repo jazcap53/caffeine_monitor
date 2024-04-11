@@ -116,7 +116,7 @@ def check_cla_match_env(cur_env, ags):
 
 def init_storage(fname):
     """Create a .json file with initial values for time and level"""
-    time_now = datetime.strftime(datetime.today(), '%Y-%m-%d %H:%M:%S')
+    time_now = datetime.strftime(datetime.today(), '%Y-%m-%d_%H:%M')
     start_level = 0
     try:
         with open(fname, 'w') as outfile:
