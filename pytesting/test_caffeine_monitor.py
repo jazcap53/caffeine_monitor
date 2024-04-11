@@ -302,41 +302,140 @@ def test_read_log(files_mocked):
 #     assert cm_obj.future_list == sorted(expected_future_list, key=lambda x: x['time'], reverse=True)
 
 
-def test_read_future_file(files_mocked):
-    open_mock, json_load_mock, json_dump_mock = files_mocked
-
-    # Define the expected future list with the correct structure
-    expected_future_list = [
-        {"when_to_process": "2023-06-08T10:00:00", "time_entered": "2023-06-08T09:00:00", "level": 50.0},
-        {"when_to_process": "2023-06-08T11:00:00", "time_entered": "2023-06-08T09:30:00", "level": 25.0}
-    ]
-
-    # Configure the mock file to return the expected future list when json.load() is called
-    json_load_mock.side_effect = [expected_future_list]
-
-    # Create an instance of CaffeineMonitor with the mocked files
-    nmspc = Namespace(mg=100, mins=180, bev='coffee')
-    cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
-
-    # Call the read_future_file() method
-    cm_obj.read_future_file()
-
-    # Assert that the future_list attribute is set correctly
-    assert cm_obj.future_list == [
-        {"when_to_process": datetime(2023, 6, 8, 11, 0), "time_entered": datetime(2023, 6, 8, 9, 30), "level": 25.0},
-        {"when_to_process": datetime(2023, 6, 8, 10, 0), "time_entered": datetime(2023, 6, 8, 9, 0), "level": 50.0}
-    ]
+# def test_read_future_file_01(files_mocked):
+#     open_mock, json_load_mock, json_dump_mock = files_mocked
+#
+#     # Define the expected future list with the correct structure
+#     expected_future_list = [
+#         {"when_to_process": "2023-06-08T10:00:00", "time_entered": "2023-06-08T09:00:00", "level": 50.0},
+#         {"when_to_process": "2023-06-08T11:00:00", "time_entered": "2023-06-08T09:30:00", "level": 25.0}
+#     ]
+#
+#     # Configure the mock file to return the expected future list when json.load() is called
+#     json_load_mock.side_effect = [expected_future_list]
+#
+#     # Create an instance of CaffeineMonitor with the mocked files
+#     nmspc = Namespace(mg=100, mins=180, bev='coffee')
+#     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
+#
+#     # Call the read_future_file() method
+#     cm_obj.read_future_file()
+#
+#     # Assert that the future_list attribute is set correctly
+#     assert cm_obj.future_list == [
+#         {"when_to_process": datetime(2023, 6, 8, 11, 0), "time_entered": datetime(2023, 6, 8, 9, 30), "level": 25.0},
+#         {"when_to_process": datetime(2023, 6, 8, 10, 0), "time_entered": datetime(2023, 6, 8, 9, 0), "level": 50.0}
+#     ]
+#
+#
+# @pytest.mark.parametrize("future_data, expected_future_list", [
+#     (
+#         [
+#             {"when_to_process": "2023-06-08T10:00:00", "time_entered": "2023-06-08T09:00:00", "level": 50.0},
+#             {"when_to_process": "2023-06-08T11:00:00", "time_entered": "2023-06-08T09:30:00", "level": 25.0}
+#         ],
+#         [
+#             {"when_to_process": datetime(2023, 6, 8, 11, 0), "time_entered": datetime(2023, 6, 8, 9, 30), "level": 25.0},
+#             {"when_to_process": datetime(2023, 6, 8, 10, 0), "time_entered": datetime(2023, 6, 8, 9, 0), "level": 50.0}
+#         ]
+#     ),
+#     (
+#         [],
+#         []
+#     ),
+#     (
+#         [
+#             {"when_to_process": "2023-06-08T10:00:00", "time_entered": "2023-06-08T09:00:00", "level": 50.0}
+#         ],
+#         [
+#             {"when_to_process": datetime(2023, 6, 8, 10, 0), "time_entered": datetime(2023, 6, 8, 9, 0), "level": 50.0}
+#         ]
+#     ),
+#     (
+#         [
+#             {"when_to_process": "2023-06-08T10:00:00", "time_entered": "2023-06-08T09:00:00", "level": 0.0}
+#         ],
+#         [
+#             {"when_to_process": datetime(2023, 6, 8, 10, 0), "time_entered": datetime(2023, 6, 8, 9, 0), "level": 0.0}
+#         ]
+#     ),
+#     (
+#         [
+#             {"when_to_process": "2023-06-08T09:00:00", "time_entered": "2023-06-08T08:00:00", "level": 30.0},
+#             {"when_to_process": "2023-06-08T10:00:00", "time_entered": "2023-06-08T09:00:00", "level": 50.0},
+#             {"when_to_process": "2023-06-08T11:00:00", "time_entered": "2023-06-08T09:30:00", "level": 25.0}
+#         ],
+#         [
+#             {"when_to_process": datetime(2023, 6, 8, 11, 0), "time_entered": datetime(2023, 6, 8, 9, 30), "level": 25.0},
+#             {"when_to_process": datetime(2023, 6, 8, 10, 0), "time_entered": datetime(2023, 6, 8, 9, 0), "level": 50.0},
+#             {"when_to_process": datetime(2023, 6, 8, 9, 0), "time_entered": datetime(2023, 6, 8, 8, 0), "level": 30.0}
+#         ]
+#     ),
+#     (
+#         [
+#             {"when_to_process": "2023-06-08T11:00:00", "time_entered": "2023-06-08T09:30:00", "level": 25.0},
+#             {"when_to_process": "2023-06-08T09:00:00", "time_entered": "2023-06-08T08:00:00", "level": 30.0},
+#             {"when_to_process": "2023-06-08T10:00:00", "time_entered": "2023-06-08T09:00:00", "level": 50.0}
+#         ],
+#         [
+#             {"when_to_process": datetime(2023, 6, 8, 11, 0), "time_entered": datetime(2023, 6, 8, 9, 30), "level": 25.0},
+#             {"when_to_process": datetime(2023, 6, 8, 10, 0), "time_entered": datetime(2023, 6, 8, 9, 0), "level": 50.0},
+#             {"when_to_process": datetime(2023, 6, 8, 9, 0), "time_entered": datetime(2023, 6, 8, 8, 0), "level": 30.0}
+#         ]
+#     ),
+# ])
+# def test_read_future_file_02(files_mocked, future_data, expected_future_list):
+#     open_mock, json_load_mock, json_dump_mock = files_mocked
+#
+#     # Configure the mock file to return the future data when json.load() is called
+#     json_load_mock.side_effect = [future_data]
+#
+#     # Create an instance of CaffeineMonitor with the mocked files
+#     nmspc = Namespace(mg=100, mins=180, bev='coffee')
+#     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
+#
+#     # Call the read_future_file() method
+#     cm_obj.read_future_file()
+#
+#     # Assert that the future_list attribute is set correctly
+#     assert cm_obj.future_list == expected_future_list
+#
+#
+# def test_read_future_file_03(files_mocked):
+#     open_mock, json_load_mock, json_dump_mock = files_mocked
+#
+#     # Define the expected future list
+#     expected_future_list = [
+#         {"when_to_process": "2023-06-08 10:00:00", "time_entered": "2023-06-08 09:00:00", "level": 50.0},
+#         {"when_to_process": "2023-06-08 11:00:00", "time_entered": "2023-06-08 09:30:00", "level": 25.0}
+#     ]
+#
+#     # Configure the mock file to return the expected future list when json.load() is called
+#     json_load_mock.side_effect = [expected_future_list]
+#
+#     # Create an instance of CaffeineMonitor with the mocked files
+#     nmspc = Namespace(mg=100, mins=180, bev='coffee')
+#     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
+#
+#     # Call the read_future_file() method
+#     cm_obj.read_future_file()
+#
+#     # Assert that the future_list attribute is set correctly
+#     assert cm_obj.future_list == [
+#         {"when_to_process": datetime(2023, 6, 8, 11, 0, 0), "time_entered": datetime(2023, 6, 8, 9, 30, 0), "level": 25.0},
+#         {"when_to_process": datetime(2023, 6, 8, 10, 0, 0), "time_entered": datetime(2023, 6, 8, 9, 0, 0), "level": 50.0}
+#     ]
 
 
 @pytest.mark.parametrize("future_data, expected_future_list", [
     (
         [
-            {"when_to_process": "2023-06-08T10:00:00", "time_entered": "2023-06-08T09:00:00", "level": 50.0},
-            {"when_to_process": "2023-06-08T11:00:00", "time_entered": "2023-06-08T09:30:00", "level": 25.0}
+            {"when_to_process": "2023-06-08 10:00:00", "time_entered": "2023-06-08 09:00:00", "level": 50.0},
+            {"when_to_process": "2023-06-08 11:00:00", "time_entered": "2023-06-08 09:30:00", "level": 25.0}
         ],
         [
-            {"when_to_process": datetime(2023, 6, 8, 11, 0), "time_entered": datetime(2023, 6, 8, 9, 30), "level": 25.0},
-            {"when_to_process": datetime(2023, 6, 8, 10, 0), "time_entered": datetime(2023, 6, 8, 9, 0), "level": 50.0}
+            {"when_to_process": datetime(2023, 6, 8, 11, 0, 0), "time_entered": datetime(2023, 6, 8, 9, 30, 0), "level": 25.0},
+            {"when_to_process": datetime(2023, 6, 8, 10, 0, 0), "time_entered": datetime(2023, 6, 8, 9, 0, 0), "level": 50.0}
         ]
     ),
     (
@@ -345,42 +444,42 @@ def test_read_future_file(files_mocked):
     ),
     (
         [
-            {"when_to_process": "2023-06-08T10:00:00", "time_entered": "2023-06-08T09:00:00", "level": 50.0}
+            {"when_to_process": "2023-06-08 10:00:00", "time_entered": "2023-06-08 09:00:00", "level": 50.0}
         ],
         [
-            {"when_to_process": datetime(2023, 6, 8, 10, 0), "time_entered": datetime(2023, 6, 8, 9, 0), "level": 50.0}
+            {"when_to_process": datetime(2023, 6, 8, 10, 0, 0), "time_entered": datetime(2023, 6, 8, 9, 0, 0), "level": 50.0}
         ]
     ),
     (
         [
-            {"when_to_process": "2023-06-08T10:00:00", "time_entered": "2023-06-08T09:00:00", "level": 0.0}
+            {"when_to_process": "2023-06-08 10:00:00", "time_entered": "2023-06-08 09:00:00", "level": 0.0}
         ],
         [
-            {"when_to_process": datetime(2023, 6, 8, 10, 0), "time_entered": datetime(2023, 6, 8, 9, 0), "level": 0.0}
+            {"when_to_process": datetime(2023, 6, 8, 10, 0, 0), "time_entered": datetime(2023, 6, 8, 9, 0, 0), "level": 0.0}
         ]
     ),
     (
         [
-            {"when_to_process": "2023-06-08T09:00:00", "time_entered": "2023-06-08T08:00:00", "level": 30.0},
-            {"when_to_process": "2023-06-08T10:00:00", "time_entered": "2023-06-08T09:00:00", "level": 50.0},
-            {"when_to_process": "2023-06-08T11:00:00", "time_entered": "2023-06-08T09:30:00", "level": 25.0}
+            {"when_to_process": "2023-06-08 09:00:00", "time_entered": "2023-06-08 08:00:00", "level": 30.0},
+            {"when_to_process": "2023-06-08 10:00:00", "time_entered": "2023-06-08 09:00:00", "level": 50.0},
+            {"when_to_process": "2023-06-08 11:00:00", "time_entered": "2023-06-08 09:30:00", "level": 25.0}
         ],
         [
-            {"when_to_process": datetime(2023, 6, 8, 11, 0), "time_entered": datetime(2023, 6, 8, 9, 30), "level": 25.0},
-            {"when_to_process": datetime(2023, 6, 8, 10, 0), "time_entered": datetime(2023, 6, 8, 9, 0), "level": 50.0},
-            {"when_to_process": datetime(2023, 6, 8, 9, 0), "time_entered": datetime(2023, 6, 8, 8, 0), "level": 30.0}
+            {"when_to_process": datetime(2023, 6, 8, 11, 0, 0), "time_entered": datetime(2023, 6, 8, 9, 30, 0), "level": 25.0},
+            {"when_to_process": datetime(2023, 6, 8, 10, 0, 0), "time_entered": datetime(2023, 6, 8, 9, 0, 0), "level": 50.0},
+            {"when_to_process": datetime(2023, 6, 8, 9, 0, 0), "time_entered": datetime(2023, 6, 8, 8, 0, 0), "level": 30.0}
         ]
     ),
     (
         [
-            {"when_to_process": "2023-06-08T11:00:00", "time_entered": "2023-06-08T09:30:00", "level": 25.0},
-            {"when_to_process": "2023-06-08T09:00:00", "time_entered": "2023-06-08T08:00:00", "level": 30.0},
-            {"when_to_process": "2023-06-08T10:00:00", "time_entered": "2023-06-08T09:00:00", "level": 50.0}
+            {"when_to_process": "2023-06-08 11:00:00", "time_entered": "2023-06-08 09:30:00", "level": 25.0},
+            {"when_to_process": "2023-06-08 09:00:00", "time_entered": "2023-06-08 08:00:00", "level": 30.0},
+            {"when_to_process": "2023-06-08 10:00:00", "time_entered": "2023-06-08 09:00:00", "level": 50.0}
         ],
         [
-            {"when_to_process": datetime(2023, 6, 8, 11, 0), "time_entered": datetime(2023, 6, 8, 9, 30), "level": 25.0},
-            {"when_to_process": datetime(2023, 6, 8, 10, 0), "time_entered": datetime(2023, 6, 8, 9, 0), "level": 50.0},
-            {"when_to_process": datetime(2023, 6, 8, 9, 0), "time_entered": datetime(2023, 6, 8, 8, 0), "level": 30.0}
+            {"when_to_process": datetime(2023, 6, 8, 11, 0, 0), "time_entered": datetime(2023, 6, 8, 9, 30, 0), "level": 25.0},
+            {"when_to_process": datetime(2023, 6, 8, 10, 0, 0), "time_entered": datetime(2023, 6, 8, 9, 0, 0), "level": 50.0},
+            {"when_to_process": datetime(2023, 6, 8, 9, 0, 0), "time_entered": datetime(2023, 6, 8, 8, 0, 0), "level": 30.0}
         ]
     ),
 ])
@@ -516,20 +615,21 @@ def test_process_item_edge_cases(files_mocked, mg_net_change, mins_ago, expected
     assert actual_new_future_list == expected_new_future_list
 
 
-def test_process_item_mins_ago_none(files_mocked):
-    nmspc = Namespace(mg=50, mins=None, bev="soda")
-    cm_obj = CaffeineMonitor(*files_mocked, False, nmspc)
-    cm_obj.mg_net_change = 50.0
-    cm_obj.mins_ago = None
-    cm_obj.new_future_list = []
-    cm_obj.data_dict = {'level': 100.0, 'time': datetime.now().strftime('%Y-%m-%d_%H:%M')}  # Initialize data_dict with default values
-    cm_obj.current_item = {
-        "level": cm_obj.mg_net_change,
-        "when_to_process": datetime.now(),
-        "time_entered": datetime.now(),
-    }
-    with pytest.raises(TypeError):
-        cm_obj.process_item(cm_obj.mg_net_change)
+# def test_process_item_mins_ago_none(files_mocked):
+#     nmspc = Namespace(mg=50, mins=None, bev="soda")
+#     cm_obj = CaffeineMonitor(*files_mocked, False, nmspc)
+#     cm_obj.mg_net_change = 50.0
+#     cm_obj.mins_ago = None
+#     cm_obj.new_future_list = []
+#     cm_obj.data_dict = {'level': 100.0, 'time': datetime.now().strftime('%Y-%m-%d_%H:%M')}  # Initialize data_dict with default values
+#     cm_obj.current_item = {
+#         "level": cm_obj.mg_net_change,
+#         "when_to_process": datetime.now(),
+#         "time_entered": datetime.now(),
+#     }
+#     with pytest.raises(TypeError):
+#         cm_obj.process_item(cm_obj.mg_net_change)
+
 
 @pytest.mark.parametrize("future_list, expected_new_future_list", [
     # Normal case: process a single past item

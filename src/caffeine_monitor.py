@@ -102,8 +102,8 @@ class CaffeineMonitor:
             self.future_list = sorted(
                 [
                     {
-                        'when_to_process': datetime.fromisoformat(item['when_to_process']),
-                        'time_entered': datetime.fromisoformat(item['time_entered']),
+                        'when_to_process': datetime.strptime(item['when_to_process'], '%Y-%m-%d %H:%M:%S'),
+                        'time_entered': datetime.strptime(item['time_entered'], '%Y-%m-%d %H:%M:%S'),
                         'level': item['level']
                     }
                     for item in future_data
@@ -128,15 +128,17 @@ class CaffeineMonitor:
         self.iofile_future.truncate()
         self.new_future_list.sort(key=lambda x: x['when_to_process'], reverse=True)
 
-        # Convert datetime objects to ISO 8601 formatted strings
+        # Convert datetime objects to formatted strings
         serializable_data = [
             {
-                'when_to_process': item['when_to_process'].isoformat(),
-                'time_entered': item['time_entered'].isoformat(),
+                'when_to_process': item['when_to_process'].strftime('%Y-%m-%d %H:%M:%S'),
+                'time_entered': item['time_entered'].strftime('%Y-%m-%d %H:%M:%S'),
                 'level': item['level']
             }
             for item in self.new_future_list
         ]
+
+        json.dump(serializable_data, self.iofile_future, indent=4)
 
         json.dump(serializable_data, self.iofile_future, indent=4)
 
