@@ -124,3 +124,8 @@ def mock_file_system(mocker):
     mock_init_storage = mocker.patch('src.utils.init_storage')
 
     return mock_path, mock_delete_old_logfile, mock_init_logfile, mock_init_future, mock_init_storage
+
+
+@pytest.fixture
+def current_time_str():
+    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
