@@ -35,7 +35,7 @@ def test_read_file(files_mocked):
     assert cm_obj.data_dict == {}
     cm_obj.read_file()
     assert cm_obj.data_dict['level'] == 0.0
-    assert cm_obj.data_dict['time'] == datetime.now().strftime('%Y-%m-%d_%H:%M')
+    assert cm_obj.data_dict['time'] == datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 
 @pytest.mark.parametrize("mg_to_add, mins", [
@@ -55,7 +55,7 @@ def test_write_file_add_mg(files_mocked, caplog, mg_to_add, mins, bev):
     nmspc = Namespace(mg=mg_to_add, mins=mins, bev=bev)
     open_mock, json_load_mock, json_dump_mock = files_mocked
     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
-    cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
+    cur_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     orig_level = 100.0
 
     cm_obj.data_dict = {'level': orig_level, 'time': cur_time}
@@ -83,12 +83,12 @@ def test_add_no_mg_updates_time(files_mocked):
 
     initial_level = 50.0
     json_load_mock.side_effect = [
-        {"time": "2020-04-01_12:51", "level": initial_level},
+        {"time": "2020-04-01 12:51:00", "level": initial_level},
         []
     ]
 
     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, False, nmspc)
-    cur_time = datetime.now().strftime('%Y-%m-%d_%H:%M')
+    cur_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     cm_obj.data_dict = {"time": cur_time, "level": initial_level}
 
     expected = {"time": cur_time, "level": initial_level}
@@ -98,10 +98,10 @@ def test_add_no_mg_updates_time(files_mocked):
 
 
 @pytest.mark.parametrize("initial_level, initial_time, time_elapsed, expected_level, mg, mins, bev", [
-    (48.0, "2020-04-01_12:51", 360, 24.0, 0, 0, 'coffee'),  # Normal case: 6 hours elapsed
-    (100.0, "2020-04-01_12:51", 0, 100.0, 100, 0, 'coffee'),  # Edge case: 0 minutes elapsed
-    (300.0, "2020-04-01_12:51", 720, 75.0, 300, 720, 'coffee'),  # Edge case: 12 hours elapsed
-    (0.0, "2020-04-01_12:51", 360, 0.0, 0, 360, 'coffee'),  # Edge case: initial level is 0
+    (48.0, "2020-04-01 12:51:00", 360, 24.0, 0, 0, 'coffee'),  # Normal case: 6 hours elapsed
+    (100.0, "2020-04-01 12:51:00", 0, 100.0, 100, 0, 'coffee'),  # Edge case: 0 minutes elapsed
+    (300.0, "2020-04-01 12:51:00", 720, 75.0, 300, 720, 'coffee'),  # Edge case: 12 hours elapsed
+    (0.0, "2020-04-01 12:51:00", 360, 0.0, 0, 360, 'coffee'),  # Edge case: initial level is 0
 ])
 def test_decay_prev_level(files_mocked_with_initial_values, initial_level, initial_time, time_elapsed, expected_level, mg, mins, bev, mocker):
     open_mock, json_load_mock, json_dump_mock = files_mocked_with_initial_values
@@ -119,7 +119,7 @@ def test_decay_prev_level(files_mocked_with_initial_values, initial_level, initi
     cm_obj.data_dict = json_load_mock.return_value  # Initialize data_dict
 
     # Freeze the time before adding the time_elapsed delta
-    frozen_time = datetime.strptime(initial_time, '%Y-%m-%d_%H:%M')
+    frozen_time = datetime.strptime(initial_time, '%Y-%m-%d %H:%M:%S')
     with freeze_time(frozen_time):
         # Set the current_time to be time_elapsed minutes later
         cm_obj.current_time = frozen_time + timedelta(minutes=time_elapsed)
@@ -129,7 +129,7 @@ def test_decay_prev_level(files_mocked_with_initial_values, initial_level, initi
     assert cm_obj.data_dict['level'] == pytest.approx(expected_level, abs=1e-6)
 
     # Assert that the time in data_dict is updated correctly
-    assert cm_obj.data_dict['time'] == (frozen_time + timedelta(minutes=time_elapsed)).strftime('%Y-%m-%d_%H:%M')
+    assert cm_obj.data_dict['time'] == (frozen_time + timedelta(minutes=time_elapsed)).strftime('%Y-%m-%d %H:%M:%S')
 
 
 # @pytest.mark.parametrize("mg_add, min_ago, net_ch", [
@@ -172,7 +172,7 @@ def test_decay_before_add(files_mocked, mg_add, min_ago, net_ch):
     open_mock, json_load_mock, json_dump_mock = files_mocked
     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, False, nmspc)
     cm_obj.current_time = datetime.now()
-    cm_obj.data_dict = {'level': 0.0, 'time': cm_obj.current_time.strftime('%Y-%m-%d_%H:%M')}
+    cm_obj.data_dict = {'level': 0.0, 'time': cm_obj.current_time.strftime('%Y-%m-%d %H:%M:%S')}
 
     # Set up self.current_item with required members
     cm_obj.current_item = {
@@ -240,7 +240,7 @@ def test_add_caffeine(files_mocked, initial_level, mg, mins, bev, expected_level
     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
 
     # Set the initial level and time dynamically based on the test parameters
-    cm_obj.data_dict = {"time": datetime.now().strftime('%Y-%m-%d_%H:%M'), "level": initial_level}
+    cm_obj.data_dict = {"time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "level": initial_level}
     cm_obj.mg_net_change = mg
 
     cm_obj.add_caffeine(mg)
@@ -253,12 +253,12 @@ def test_update_time(files_mocked):
     open_mock, json_load_mock, json_dump_mock = files_mocked
     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
     cm_obj.read_file()  # loads cm.data_dict from file
-    cm_obj.data_dict['time'] = (datetime.now() - timedelta(days=10)).strftime('%Y-%m-%d_%H:%M')
-    freezer = freeze_time('2020-05-01 11:00')
+    cm_obj.data_dict['time'] = (datetime.now() - timedelta(days=10)).strftime('%Y-%m-%d %H:%M:%S')
+    freezer = freeze_time('2020-05-01 11:00:00')
     freezer.start()
     cm_obj.update_time()
     freezer.stop()
-    assert cm_obj.data_dict['time'] == '2020-05-01_11:00'
+    assert cm_obj.data_dict['time'] == '2020-05-01 11:00:00'
 
 
 def test_str(files_mocked):
@@ -266,8 +266,8 @@ def test_str(files_mocked):
     nmspc = Namespace(mg=50, mins=50, bev='soda')
     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, False, nmspc)
     cm_obj.data_dict['level'] = 48.0
-    cm_obj.data_dict['time'] = datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d_%H:%M')
-    assert str(cm_obj) == 'Caffeine level is 48.0 mg at time 2020-04-01_12:51'
+    cm_obj.data_dict['time'] = datetime(2020, 4, 1, 12, 51).strftime('%Y-%m-%d %H:%M:%S')
+    assert str(cm_obj) == 'Caffeine level is 48.0 mg at time 2020-04-01 12:51:00'
 
 
 def test_read_log(files_mocked):

@@ -76,7 +76,7 @@ def files_mocked(mocker: MockerFixture):
     json_dump_mock.side_effect = json_dump_side_effect
 
     def json_load_side_effect():
-        return {"time": (dt_now := datetime.now().strftime('%Y-%m-%d_%H:%M')), "level": 0.0}
+        return {"time": (dt_now := datetime.now().strftime('%Y-%m-%d %H:%M:%S')), "level": 0.0}
 
     json_load_mock.side_effect = [
         json_load_side_effect(),

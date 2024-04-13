@@ -189,7 +189,7 @@ def test_init_storage_stores_good_json_file(mocker):
 
     # Call the init_storage function with a dummy filename
     dummy_filename = 'dummy.json'
-    freezer = freeze_time('2020-03-26 14:13')
+    freezer = freeze_time('2020-03-26 14:13:00')
     freezer.start()
     init_storage(dummy_filename)
     freezer.stop()
@@ -198,7 +198,7 @@ def test_init_storage_stores_good_json_file(mocker):
     # (no need to assert this, as we are mocking the open function directly)
 
     # Assert that the correct data was written to the file
-    expected_data = {'time': '2020-03-26_14:13', 'level': 0}
+    expected_data = {'time': '2020-03-26 14:13:00', 'level': 0}
     assert json.loads(''.join(mock_file_data)) == expected_data
 
 

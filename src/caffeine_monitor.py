@@ -93,7 +93,7 @@ class CaffeineMonitor:
         """Read initial time and caffeine level from file"""
         self.data_dict = json.load(self.iofile)
         if not self.data_dict:
-            self.data_dict = {'time': datetime.now(), 'level': 0.0}
+            self.data_dict = {'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 'level': 0.0}
 
     def read_future_file(self):
         """Read future changes from file"""
