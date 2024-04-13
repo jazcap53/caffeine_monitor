@@ -102,8 +102,8 @@ class CaffeineMonitor:
             self.future_list = sorted(
                 [
                     {
-                        'when_to_process': datetime.fromisoformat(item['when_to_process']),
-                        'time_entered': datetime.fromisoformat(item['time_entered']),
+                        'when_to_process': datetime.strptime(item['when_to_process'], '%Y-%m-%d %H:%M:%S'),
+                        'time_entered': datetime.strptime(item['time_entered'], '%Y-%m-%d %H:%M:%S'),
                         'level': item['level']
                     }
                     for item in future_data
@@ -128,11 +128,11 @@ class CaffeineMonitor:
         self.iofile_future.truncate()
         self.new_future_list.sort(key=lambda x: x['when_to_process'], reverse=True)
 
-        # Convert datetime objects to ISO 8601 formatted strings
+        # Convert datetime objects to formatted strings
         serializable_data = [
             {
-                'when_to_process': item['when_to_process'].isoformat(),
-                'time_entered': item['time_entered'].isoformat(),
+                'when_to_process': item['when_to_process'].strftime('%Y-%m-%d %H:%M:%S'),
+                'time_entered': item['time_entered'].strftime('%Y-%m-%d %H:%M:%S'),
                 'level': item['level']
             }
             for item in self.new_future_list
@@ -157,14 +157,10 @@ class CaffeineMonitor:
         Reduce stored level to account for decay since that value
         was written
         """
-        stored_time = datetime.strptime(self.data_dict['time'],
-                                        '%Y-%m-%d_%H:%M')
-        minutes_elapsed = (self.current_time -
-                           stored_time) / timedelta(minutes=1)
-        self.data_dict['time'] = datetime.strftime(self.current_time,
-                                                   '%Y-%m-%d_%H:%M')
-        self.data_dict['level'] *= pow(0.5, (minutes_elapsed /
-                                             self.half_life))
+        stored_time = datetime.strptime(self.data_dict['time'], '%Y-%m-%d %H:%M:%S')
+        minutes_elapsed = (self.current_time - stored_time).total_seconds() / 60
+        self.data_dict['time'] = self.current_time.strftime('%Y-%m-%d %H:%M:%S')
+        self.data_dict['level'] *= pow(0.5, (minutes_elapsed / self.half_life))
 
     def decay_before_add(self):
         """
@@ -250,8 +246,7 @@ class CaffeineMonitor:
         """
         Called by: main()
         """
-        self.data_dict['time'] = datetime.strftime(datetime.today(),
-                                                   '%Y-%m-%d_%H:%M')
+        self.data_dict['time'] = datetime.strftime(datetime.today(), '%Y-%m-%d %H:%M:%S')
 
     def __str__(self):
         return (f'Caffeine level is {round(self.data_dict["level"], 1)} '
