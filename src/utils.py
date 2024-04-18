@@ -45,6 +45,9 @@ def parse_clas(args=None):
     parser.add_argument('mg', nargs='?', type=int, default=0, help='amount of caffeine added (may be 0)')
     parser.add_argument('mins', nargs='?', type=int, default=0, help='minutes ago caffeine was added (may be negative, 0, or omitted)')
 
+    # Add -w/--walltime argument
+    parser.add_argument('-w', '--walltime', type=str, help='walltime in HH:MM format')
+
     # Parse -b/--bev separately with a default value
     bev_parser = parser.add_argument_group('beverage options')
     bev_parser.add_argument('-b', '--bev', choices=['coffee', 'soda', 'chocolate'], default='coffee', help="beverage: 'coffee' (default), 'soda', or 'chocolate'")
@@ -58,6 +61,15 @@ def parse_clas(args=None):
     if args.mins < 0:
         print("minutes ago argument (mins) must not be < 0")
         sys.exit(1)
+
+    # Parse the walltime argument and set it in the args object
+    if args.walltime:
+        try:
+            walltime = datetime.strptime(args.walltime, "%H:%M")
+            args.walltime = walltime.strftime("%H:%M")
+        except ValueError:
+            print("Invalid walltime format. Expected HH:MM")
+            sys.exit(1)
 
     return args
 

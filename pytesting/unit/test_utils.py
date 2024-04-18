@@ -1,6 +1,7 @@
 # file: pytesting/test_utils.py
 
 from argparse import Namespace
+from datetime import datetime
 import src.utils
 import sys
 import os
@@ -20,7 +21,7 @@ import logging
 
 
 # TODO: TDD
-@pytest.mark.xfail
+# @pytest.mark.xfail
 @pytest.mark.parametrize("mg", [50, 100, 200, 300])
 @pytest.mark.parametrize("flag", ["-w", "--walltime"])
 def test_parse_clas_walltime(mg, flag):
@@ -35,6 +36,20 @@ def test_parse_clas_walltime(mg, flag):
     assert parsed_args.walltime == walltime
     assert parsed_args.mg == mg
     assert parsed_args.mins == 0
+
+
+@pytest.mark.parametrize("mg", [50, 100, 200, 300])
+@pytest.mark.parametrize("flag", ["-w", "--walltime"])
+@pytest.mark.parametrize("invalid_walltime", ["1234", "12:345", "1 2:34", "12:3a"])
+def test_parse_clas_invalid_walltime_format(capsys, mg, flag, invalid_walltime):
+    # Arrange
+    args = [str(mg), flag, invalid_walltime]
+
+    # Act and Assert
+    with pytest.raises(SystemExit) as exc_info:
+        parse_clas(args)
+    assert exc_info.value.code == 1
+    assert "Invalid walltime format. Expected HH:MM" in capsys.readouterr().out
 
 
 @pytest.mark.xfail
