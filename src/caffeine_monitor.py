@@ -62,15 +62,12 @@ class CaffeineMonitor:
             self.add_coffee()
         elif self.beverage == "soda":
             self.add_soda()
-        else:
-            pass
 
         self.process_future_list()
 
         self.update_time()
 
         self.write_future_file()
-
         self.write_file()
         print(self)
 
@@ -191,28 +188,40 @@ class CaffeineMonitor:
         time_entered = self.current_time
 
         for i in range(4):
-            self.mg_net_change = mg_to_add_now
-            self.when_to_process = time_entered + timedelta(minutes=i * COFFEE_MINS_DECREMENT)
-            self.process_item(mg_to_add_now)
+            item = {
+                'when_to_process': time_entered + timedelta(minutes=i * COFFEE_MINS_DECREMENT),
+                'time_entered': time_entered,
+                'level': mg_to_add_now
+            }
+            self.future_list.append(item)
 
     def add_soda(self):
-        soda_amt = self.mg_to_add
-        self.time_entered = datetime.now()
+        mg_to_add_now = self.mg_to_add
+        time_entered = self.current_time
 
         # First part (65%)
-        self.mg_net_change = soda_amt * 0.65
-        self.when_to_process = self.time_entered
-        self.process_item(soda_amt * 0.65)
+        item1 = {
+            'when_to_process': time_entered,
+            'time_entered': time_entered,
+            'level': mg_to_add_now * 0.65
+        }
+        self.future_list.append(item1)
 
         # Second part (25%)
-        self.mg_net_change = soda_amt * 0.25
-        self.when_to_process = self.time_entered + timedelta(minutes=SODA_MINS_DECREMENT)
-        self.process_item(soda_amt * 0.25)
+        item2 = {
+            'when_to_process': time_entered + timedelta(minutes=SODA_MINS_DECREMENT),
+            'time_entered': time_entered,
+            'level': mg_to_add_now * 0.25
+        }
+        self.future_list.append(item2)
 
         # Third part (10%)
-        self.mg_net_change = soda_amt * 0.1
-        self.when_to_process = self.time_entered + timedelta(minutes=2 * SODA_MINS_DECREMENT)
-        self.process_item(soda_amt * 0.1)
+        item3 = {
+            'when_to_process': time_entered + timedelta(minutes=2 * SODA_MINS_DECREMENT),
+            'time_entered': time_entered,
+            'level': mg_to_add_now * 0.1
+        }
+        self.future_list.append(item3)
 
     def process_future_list(self):
         self.future_list.sort(key=lambda x: x['when_to_process'], reverse=True)
@@ -228,8 +237,8 @@ class CaffeineMonitor:
         if self.mg_net_change == 0:
             return
 
-        if self.time_entered >= self.current_time:
-            raise ValueError("time_entered cannot be in the future")
+        # if self.time_entered >= self.current_time:
+        #     raise ValueError("time_entered cannot be in the future")
 
         if self.when_to_process > self.current_time:  # item is still in the future
             new_item = {"when_to_process": self.when_to_process, "time_entered": self.time_entered,
