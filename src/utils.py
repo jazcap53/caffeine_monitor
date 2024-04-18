@@ -24,7 +24,7 @@ def check_which_environment():
     return which_env
 
 
-def parse_args(args=None):
+def parse_clas(args=None):
     """
     Parse the command line arguments
     :return: an argparse.Namespace instance
@@ -158,7 +158,7 @@ def init_logfile(fname):
 
 
 def set_up():
-    args = parse_args(sys.argv[1:])
+    args = parse_clas(sys.argv[1:])
 
     if '-h' in sys.argv[1:] or '--help' in sys.argv[1:]:
         print_help()

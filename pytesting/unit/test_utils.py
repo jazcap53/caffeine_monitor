@@ -9,7 +9,7 @@ import pytest
 from pytest_mock import mocker
 from freezegun import freeze_time
 
-from src.utils import (check_which_environment, parse_args,
+from src.utils import (check_which_environment, parse_clas,
                        read_config_file, check_cla_match_env, init_storage,
                        delete_old_logfile, create_files, init_future, init_logfile,
                        set_up)
@@ -23,31 +23,32 @@ import logging
 @pytest.mark.xfail
 @pytest.mark.parametrize("mg", [50, 100, 200, 300])
 @pytest.mark.parametrize("flag", ["-w", "--walltime"])
-def test_parse_args_walltime(mg, flag):
+def test_parse_clas_walltime(mg, flag):
     # Arrange
     walltime = datetime.now().strftime("%H:%M")
     args = [str(mg), flag, walltime]
 
     # Act
-    parsed_args = parse_args(args)
+    parsed_args = parse_clas(args)
 
     # Assert
     assert parsed_args.walltime == walltime
     assert parsed_args.mg == mg
     assert parsed_args.mins == 0
 
+
 @pytest.mark.xfail
 @pytest.mark.parametrize("mg", [50, 100, 200, 300])
 @pytest.mark.parametrize("minutes", [15, 180, 720, -60])
 @pytest.mark.parametrize("flag", ["-w", "--walltime"])
-def test_parse_args_walltime_and_minutes_mutually_exclusive(mg, minutes, flag):
+def test_parse_clas_walltime_and_minutes_mutually_exclusive(mg, minutes, flag):
     # Arrange
     walltime = datetime.now().strftime("%H:%M")
     args = [str(mg), str(minutes), flag, walltime]
 
     # Act and Assert
     with pytest.raises(ValueError, match=r"walltime and mins arguments are mutually exclusive"):
-        parse_args(args)
+        parse_clas(args)
 
 
 def test_bad_caff_env_value_exits(mocker):
@@ -75,12 +76,12 @@ def test_bad_caff_env_value_exits(mocker):
         (["100", "-b"], SystemExit),  # Missing beverage type after -b
     ],
 )
-def test_parse_args(args, expected):
+def test_parse_clas(args, expected):
     if expected == SystemExit:
         with pytest.raises(SystemExit):
-            parse_args(args)
+            parse_clas(args)
     else:
-        parsed_args = parse_args(args)
+        parsed_args = parse_clas(args)
         for key, value in expected.items():
             assert getattr(parsed_args, key) == value
 

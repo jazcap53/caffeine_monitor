@@ -9,7 +9,7 @@ class TestSetUp:
     def setup(self, mocker):
         self.mocker = mocker
         self.mock_args = mocker.MagicMock()
-        self.mock_parse_args = mocker.patch('src.utils.parse_args', return_value=self.mock_args)
+        self.mock_parse_clas = mocker.patch('src.utils.parse_clas', return_value=self.mock_args)
         self.mock_config = {
             'prod': {'json_file': 'prod.json', 'json_file_future': 'prod_future.json', 'log_file': 'prod.log'},
             'devel': {'json_file': 'devel.json', 'json_file_future': 'devel_future.json', 'log_file': 'devel.log'},
@@ -40,7 +40,7 @@ class TestSetUp:
         expected_json_filename = self.mock_config[caff_env]['json_file']
         expected_json_future_filename = self.mock_config[caff_env]['json_file_future']
 
-        self.mock_parse_args.assert_called_once_with(expected_args[1:])
+        self.mock_parse_clas.assert_called_once_with(expected_args[1:])
         self.mock_read_config_file.assert_called_once_with('src/caffeine.ini')
         self.mock_check_cla_match_env.assert_called_once_with(caff_env, self.mock_args)
         self.mock_create_files.assert_called_once_with(expected_log_filename, expected_json_filename, expected_json_future_filename)
