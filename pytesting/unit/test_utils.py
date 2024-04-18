@@ -19,6 +19,37 @@ import builtins
 import logging
 
 
+# TODO: TDD
+@pytest.mark.xfail
+@pytest.mark.parametrize("mg", [50, 100, 200, 300])
+@pytest.mark.parametrize("flag", ["-w", "--walltime"])
+def test_parse_args_walltime(mg, flag):
+    # Arrange
+    walltime = datetime.now().strftime("%H:%M")
+    args = [str(mg), flag, walltime]
+
+    # Act
+    parsed_args = parse_args(args)
+
+    # Assert
+    assert parsed_args.walltime == walltime
+    assert parsed_args.mg == mg
+    assert parsed_args.mins == 0
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("mg", [50, 100, 200, 300])
+@pytest.mark.parametrize("minutes", [15, 180, 720, -60])
+@pytest.mark.parametrize("flag", ["-w", "--walltime"])
+def test_parse_args_walltime_and_minutes_mutually_exclusive(mg, minutes, flag):
+    # Arrange
+    walltime = datetime.now().strftime("%H:%M")
+    args = [str(mg), str(minutes), flag, walltime]
+
+    # Act and Assert
+    with pytest.raises(ValueError, match=r"walltime and mins arguments are mutually exclusive"):
+        parse_args(args)
+
+
 def test_bad_caff_env_value_exits(mocker):
     mocker.patch('os.environ')
     mocker.patch('sys.exit')
