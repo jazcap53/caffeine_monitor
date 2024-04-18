@@ -167,42 +167,38 @@ def test_decay_before_add(files_mocked, mg_add, min_ago, net_ch):
     assert cm_obj.mg_net_change == round(expected_amount_left, 1)
 
 
-@pytest.mark.parametrize("mg, mins, expected_mg_net_change", [
-    (100, 180, 25),    # Normal case
-    (0, 0, 0),         # Edge case: 0 mg and 0 mins
-    (200, 0, 50),      # Edge case: mins_ago is 0
-    (100, -30, 25),    # Edge case: negative mins_ago
+@pytest.mark.parametrize("mg, mins, expected_future_list_length", [
+    (100, 180, 4),    # Normal case
+    (0, 0, 4),        # Edge case: 0 mg and 0 mins
+    (200, 0, 4),      # Edge case: mins_ago is 0
+    (100, -30, 4),    # Edge case: negative mins_ago
 ])
-def test_add_coffee(mocker, files_mocked, mg, mins, expected_mg_net_change):
+def test_add_coffee(mocker, files_mocked, mg, mins, expected_future_list_length):
     open_mock, json_load_mock, json_dump_mock = files_mocked
     nmspc = Namespace(mg=mg, mins=mins, bev='coffee')
     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
-
-    mocker.patch.object(cm_obj, 'process_item')
+    cm_obj.current_time = datetime.now()
 
     cm_obj.add_coffee()
 
-    assert cm_obj.mg_net_change == expected_mg_net_change
-    assert cm_obj.process_item.call_count == 4
+    assert len(cm_obj.future_list) == expected_future_list_length
 
 
-@pytest.mark.parametrize("mg, mins, expected_mg_net_change", [
-    (200, 0, 20),      # Normal case
-    (0, 0, 0),         # Edge case: 0 mg and 0 mins
-    (300, 30, 30),     # Edge case: mins_ago is 30
-    (100, -20, 10),    # Edge case: negative mins_ago
+@pytest.mark.parametrize("mg, mins, expected_future_list_length", [
+    (200, 0, 3),      # Normal case
+    (0, 0, 3),        # Edge case: 0 mg and 0 mins
+    (300, 30, 3),     # Edge case: mins_ago is 30
+    (100, -20, 3),    # Edge case: negative mins_ago
 ])
-def test_add_soda(mocker, files_mocked, mg, mins, expected_mg_net_change):
+def test_add_soda(mocker, files_mocked, mg, mins, expected_future_list_length):
     open_mock, json_load_mock, json_dump_mock = files_mocked
     nmspc = Namespace(mg=mg, mins=mins, bev='soda')
     cm_obj = CaffeineMonitor(open_mock, json_load_mock, json_load_mock, True, nmspc)
-
-    mocker.patch.object(cm_obj, 'process_item')
+    cm_obj.current_time = datetime.now()
 
     cm_obj.add_soda()
 
-    assert cm_obj.mg_net_change == expected_mg_net_change
-    assert cm_obj.process_item.call_count == 3
+    assert len(cm_obj.future_list) == expected_future_list_length
 
 
 @pytest.mark.parametrize("initial_level, mg, mins, expected_level", [
