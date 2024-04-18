@@ -185,7 +185,7 @@ class CaffeineMonitor:
 
     def add_coffee(self):
         mg_to_add_now = self.mg_to_add / 4
-        time_entered = self.current_time
+        time_entered = self.current_time - timedelta(minutes=self.mins_ago)
 
         for i in range(4):
             item = {
@@ -197,7 +197,7 @@ class CaffeineMonitor:
 
     def add_soda(self):
         mg_to_add_now = self.mg_to_add
-        time_entered = self.current_time
+        time_entered = self.current_time - timedelta(minutes=self.mins_ago)
 
         # First part (65%)
         item1 = {
