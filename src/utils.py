@@ -60,8 +60,11 @@ def parse_clas(args=None):
 
     # Check if both mins and walltime arguments are provided
     if args.mins is not None and args.walltime:
-        print('The minutes argument and walltime argument are mutually exclusive')
-        sys.exit(0)
+        parser.error("The minutes argument and walltime argument are mutually exclusive")
+
+    # convert absent arguments (`None`) to 0
+    args.mg = args.mg if args.mg is not None else 0
+    args.mins = args.mins if args.mins is not None else 0
 
     # Parse the walltime argument and set it in the args object
     if args.walltime:
