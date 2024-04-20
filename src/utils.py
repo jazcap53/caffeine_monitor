@@ -24,18 +24,7 @@ def check_which_environment():
     return which_env
 
 
-def parse_clas(args=None):
-    """
-    Parse the command line arguments
-    :return: an argparse.Namespace instance
-    """
-    if args is None:
-        args = sys.argv[1:]
-
-    # Check for multiple instances of -b/--bev argument
-    if args.count('--bev') + args.count('-b') > 1:
-        raise ValueError("Duplicate -b/--bev argument")
-
+def create_parser():
     parser = argparse.ArgumentParser(description='Estimate the quantity of caffeine (in mg) in the user\'s body')
 
     env_group = parser.add_mutually_exclusive_group()
@@ -48,13 +37,38 @@ def parse_clas(args=None):
     time_group.add_argument('mins', nargs='?', type=int, help='minutes ago caffeine was added (may be negative, 0, or omitted)')
     time_group.add_argument('-w', '--walltime', type=str, help='walltime in HH:MM format')
 
-    # Parse -b/--bev separately with a default value
     bev_parser = parser.add_argument_group('beverage options')
     bev_parser.add_argument('-b', '--bev', choices=['coffee', 'soda', 'chocolate'], default='coffee', help="beverage: 'coffee' (default), 'soda', or 'chocolate'")
+
+    return parser
+
+
+def validate_args(parser, args):
+    # Check for multiple instances of -b/--bev argument
+    if args.count('--bev') + args.count('-b') > 1:
+        raise ValueError("Duplicate -b/--bev argument")
 
     if '-h' in args or '--help' in args:
         parser.print_help()
         sys.exit(0)
+
+
+def parse_walltime(args):
+    if args.walltime:
+        try:
+            walltime = datetime.strptime(args.walltime, "%H:%M")
+            args.walltime = walltime.strftime("%H:%M")
+        except ValueError:
+            print("Invalid walltime format. Expected HH:MM")
+            sys.exit(1)
+
+
+def parse_clas(args=None):
+    if args is None:
+        args = sys.argv[1:]
+
+    parser = create_parser()
+    validate_args(parser, args)
 
     args = parser.parse_args(args)
 
@@ -66,16 +80,7 @@ def parse_clas(args=None):
     args.mg = args.mg if args.mg is not None else 0
     args.mins = args.mins if args.mins is not None else 0
 
-    # Parse the walltime argument and set it in the args object
-    if args.walltime:
-        try:
-            # Convert the walltime string to a datetime object
-            walltime = datetime.strptime(args.walltime, "%H:%M")
-            # Convert the datetime object back to a string in the desired format
-            args.walltime = walltime.strftime("%H:%M")
-        except ValueError:
-            print("Invalid walltime format. Expected HH:MM")
-            sys.exit(1)
+    parse_walltime(args)
 
     return args
 
