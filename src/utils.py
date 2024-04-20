@@ -42,11 +42,11 @@ def parse_clas(args=None):
     env_group.add_argument('-d', '--devel', action='store_true', help='Use development environment')
     env_group.add_argument('-q', '--pytesting', dest='pytesting', action='store_true', help='Use pytesting environment for pytest runs')
 
-    parser.add_argument('mg', nargs='?', type=int, default=0, help='amount of caffeine added (may be 0)')
-    parser.add_argument('mins', nargs='?', type=int, default=0, help='minutes ago caffeine was added (may be negative, 0, or omitted)')
+    parser.add_argument('mg', nargs='?', type=int, help='amount of caffeine added (may be 0)')
 
-    # Add -w/--walltime argument
-    parser.add_argument('-w', '--walltime', type=str, help='walltime in HH:MM format')
+    time_group = parser.add_mutually_exclusive_group()
+    time_group.add_argument('mins', nargs='?', type=int, help='minutes ago caffeine was added (may be negative, 0, or omitted)')
+    time_group.add_argument('-w', '--walltime', type=str, help='walltime in HH:MM format')
 
     # Parse -b/--bev separately with a default value
     bev_parser = parser.add_argument_group('beverage options')
@@ -58,14 +58,17 @@ def parse_clas(args=None):
 
     args = parser.parse_args(args)
 
-    if args.mins < 0:
-        print("minutes ago argument (mins) must not be < 0")
-        sys.exit(1)
+    # Check if both mins and walltime arguments are provided
+    if args.mins is not None and args.walltime:
+        print('The minutes argument and walltime argument are mutually exclusive')
+        sys.exit(0)
 
     # Parse the walltime argument and set it in the args object
     if args.walltime:
         try:
+            # Convert the walltime string to a datetime object
             walltime = datetime.strptime(args.walltime, "%H:%M")
+            # Convert the datetime object back to a string in the desired format
             args.walltime = walltime.strftime("%H:%M")
         except ValueError:
             print("Invalid walltime format. Expected HH:MM")

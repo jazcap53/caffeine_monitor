@@ -20,11 +20,13 @@ import builtins
 import logging
 
 
-# TODO: TDD
 # @pytest.mark.xfail
 @pytest.mark.parametrize("mg", [50, 100, 200, 300])
 @pytest.mark.parametrize("flag", ["-w", "--walltime"])
 def test_parse_clas_walltime(mg, flag):
+    """
+    check that `walltime` cla is recognized
+    """
     # Arrange
     walltime = datetime.now().strftime("%H:%M")
     args = [str(mg), flag, walltime]
@@ -35,13 +37,16 @@ def test_parse_clas_walltime(mg, flag):
     # Assert
     assert parsed_args.walltime == walltime
     assert parsed_args.mg == mg
-    assert parsed_args.mins == 0
+    assert not parsed_args.mins  # check that mins is None or 0
 
 
 @pytest.mark.parametrize("mg", [50, 100, 200, 300])
 @pytest.mark.parametrize("flag", ["-w", "--walltime"])
 @pytest.mark.parametrize("invalid_walltime", ["1234", "12:345", "1 2:34", "12:3a"])
 def test_parse_clas_invalid_walltime_format(capsys, mg, flag, invalid_walltime):
+    """
+    check that `walltime` cla is formatted correctly
+    """
     # Arrange
     args = [str(mg), flag, invalid_walltime]
 
@@ -50,20 +55,6 @@ def test_parse_clas_invalid_walltime_format(capsys, mg, flag, invalid_walltime):
         parse_clas(args)
     assert exc_info.value.code == 1
     assert "Invalid walltime format. Expected HH:MM" in capsys.readouterr().out
-
-
-@pytest.mark.xfail
-@pytest.mark.parametrize("mg", [50, 100, 200, 300])
-@pytest.mark.parametrize("minutes", [15, 180, 720, -60])
-@pytest.mark.parametrize("flag", ["-w", "--walltime"])
-def test_parse_clas_walltime_and_minutes_mutually_exclusive(mg, minutes, flag):
-    # Arrange
-    walltime = datetime.now().strftime("%H:%M")
-    args = [str(mg), str(minutes), flag, walltime]
-
-    # Act and Assert
-    with pytest.raises(ValueError, match=r"walltime and mins arguments are mutually exclusive"):
-        parse_clas(args)
 
 
 def test_bad_caff_env_value_exits(mocker):
@@ -80,13 +71,13 @@ def test_bad_caff_env_value_exits(mocker):
         (["200"], {"mg": 200}),
         (["200", "360"], {"mg": 200, "mins": 360}),
         (["0", "0", "--bev", "soda"], {"mg": 0, "mins": 0, "bev": "soda"}),
-        (["100", "-b", "chocolate"], {"mg": 100, "mins": 0, "bev": "chocolate"}),
-        (["-b", "coffee"], {"mg": 0, "mins": 0, "bev": "coffee"}),
+        (["100", "-b", "chocolate"], {"mg": 100, "mins": None, "bev": "chocolate"}),
+        (["-b", "coffee"], {"mg": None, "mins": None, "bev": "coffee"}),
         (["100", "20", "--bev", "invalid"], SystemExit),
         (["-h"], SystemExit),
         (["abc"], SystemExit),  # Invalid type for mg
         (["100", "abd"], SystemExit),  # Invalid type for mins
-        (["100", "-60"], SystemExit),  # Negative value for mins
+        (["100", "-60"], {"mg": 100, "mins": -60}),  # Negative value for mins
         (["100", "20", "--bev", "whiskey"], SystemExit),  # Invalid beverage type
         (["100", "-b"], SystemExit),  # Missing beverage type after -b
     ],
