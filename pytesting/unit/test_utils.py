@@ -13,7 +13,7 @@ from freezegun import freeze_time
 from src.utils import (check_which_environment, parse_clas,
                        read_config_file, check_cla_match_env, init_storage,
                        delete_old_logfile, create_files, init_future, init_logfile,
-                       set_up)
+                       convert_walltime_to_mins, set_up)
 import subprocess
 from src.caffeine_monitor import CaffeineMonitor
 import builtins
@@ -55,6 +55,24 @@ def test_parse_clas_invalid_walltime_format(capsys, mg, flag, invalid_walltime):
         parse_clas(args)
     assert exc_info.value.code == 1
     assert "Invalid walltime format. Expected HH:MM" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("current_time, walltime, expected_mins", [
+    ("10:30", "09:45", "45"),   # Normal case: 45 minutes before current time
+    ("00:00", "23:30", "30"),   # Edge case: 30 minutes before midnight
+    ("23:59", "23:59", "0"),    # Edge case: same as current time
+    ("12:00", "11:00", "60"),   # Normal case: 1 hour before current time
+    ("15:30", "16:00", "-30"),  # Normal case: 30 minutes after current time
+])
+def test_convert_walltime_to_mins(current_time, walltime, expected_mins):
+    # Arrange
+    current_datetime = datetime.strptime(current_time, "%H:%M")
+
+    # Act
+    mins = convert_walltime_to_mins(walltime, current_datetime)
+
+    # Assert
+    assert mins == expected_mins
 
 
 def test_bad_caff_env_value_exits(mocker):

@@ -35,7 +35,9 @@ def create_parser():
 
     time_group = parser.add_mutually_exclusive_group()
     time_group.add_argument('mins', nargs='?', type=int, help='minutes ago caffeine was added (may be negative, 0, or omitted)')
-    time_group.add_argument('-w', '--walltime', type=str, help='walltime in HH:MM format')
+    time_group.add_argument('-w', '--walltime', type=str, help='walltime in HH:MM format. If walltime is more than 2 '
+                                                               'hours in the future, it is assumed to represent a '
+                                                               'time in the previous day.')
 
     bev_parser = parser.add_argument_group('beverage options')
     bev_parser.add_argument('-b', '--bev', choices=['coffee', 'soda', 'chocolate'], default='coffee', help="beverage: 'coffee' (default), 'soda', or 'chocolate'")
@@ -61,6 +63,31 @@ def parse_walltime(args):
         except ValueError:
             print("Invalid walltime format. Expected HH:MM")
             sys.exit(1)
+
+
+def convert_walltime_to_mins(walltime, current_datetime):
+    # Parse walltime into a datetime object
+    walltime_datetime = datetime.strptime(walltime, "%H:%M")
+
+    # Replace the year, month, and day of walltime_datetime with the current date
+    walltime_datetime = walltime_datetime.replace(
+        year=current_datetime.year,
+        month=current_datetime.month,
+        day=current_datetime.day
+    )
+
+    # Calculate the difference between current_datetime and walltime_datetime
+    time_diff = current_datetime - walltime_datetime
+
+    # Convert the time difference to minutes
+    mins_diff = int(time_diff.total_seconds() / 60)
+
+    # If mins_diff is less than -120 (more than 2 hours in the future),
+    # assume it represents a time in the previous day
+    if mins_diff < -120:
+        mins_diff += (24 * 60)
+
+    return str(mins_diff)
 
 
 def parse_clas(args=None):
