@@ -69,15 +69,11 @@ def convert_walltime_to_mins(walltime, current_datetime):
     # Parse walltime into a datetime object
     walltime_datetime = datetime.strptime(walltime, "%H:%M")
 
-    # Replace the year, month, and day of walltime_datetime with the current date
-    walltime_datetime = walltime_datetime.replace(
-        year=current_datetime.year,
-        month=current_datetime.month,
-        day=current_datetime.day
-    )
+    # Get the time component of the current datetime
+    current_time = current_datetime.time()
 
-    # Calculate the difference between current_datetime and walltime_datetime
-    time_diff = current_datetime - walltime_datetime
+    # Calculate the difference between current_time and walltime_datetime
+    time_diff = datetime.combine(datetime.today(), current_time) - datetime.combine(datetime.today(), walltime_datetime.time())
 
     # Convert the time difference to minutes
     mins_diff = int(time_diff.total_seconds() / 60)
@@ -99,15 +95,16 @@ def parse_clas(args=None):
 
     args = parser.parse_args(args)
 
-    # Check if both mins and walltime arguments are provided
-    if args.mins is not None and args.walltime:
-        parser.error("The minutes argument and walltime argument are mutually exclusive")
-
     # convert absent arguments (`None`) to 0
     args.mg = args.mg if args.mg is not None else 0
-    args.mins = args.mins if args.mins is not None else 0
 
     parse_walltime(args)
+
+    if args.walltime:
+        current_datetime = datetime.now()
+        args.mins = int(convert_walltime_to_mins(args.walltime, current_datetime))
+    else:
+        args.mins = args.mins if args.mins is not None else 0
 
     return args
 

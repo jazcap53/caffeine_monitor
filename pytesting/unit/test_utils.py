@@ -75,6 +75,29 @@ def test_convert_walltime_to_mins(current_time, walltime, expected_mins):
     assert mins == expected_mins
 
 
+@pytest.mark.parametrize("mg, walltime, current_time, expected_mins", [
+    (100, "09:45", "10:30", 45),
+    (200, "23:30", "00:00", 30),
+    (50, "11:00", "12:00", 60),
+    (75, "08:00", "09:30", 90),
+    (150, "16:00", "15:30", -30),
+    (100, "23:45", "02:30", 165),  # Test case for walltime in the previous day
+])
+def test_parse_clas_walltime_to_mins(mg, walltime, current_time, expected_mins, mocker):
+    # Arrange
+    args = [str(mg), "-w", walltime]
+
+    # Create a custom datetime object with the desired time component
+    # current_datetime = datetime.combine(datetime.today(), datetime.strptime(current_time, "%H:%M").time())
+
+    # Act
+    with freeze_time(current_time):
+        parsed_args = parse_clas(args)
+
+    # Assert
+    assert parsed_args.mins == expected_mins
+
+
 def test_bad_caff_env_value_exits(mocker):
     mocker.patch('os.environ')
     mocker.patch('sys.exit')
