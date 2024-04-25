@@ -75,7 +75,7 @@ def get_ttl_mins_from_datetime(dt):
 
 
 def get_ttl_mins_from_time_str(ts):
-    match = re.match(r'(\d{2}):(\d{2})', ts)
+    match = re.match(r'(\d{2}):(\d{2})$', ts)
     if match:
         ts_groups = match.groups()
         hours = int(ts_groups[0])
@@ -117,9 +117,14 @@ def parse_clas(args=None):
         args = sys.argv[1:]
 
     parser = create_parser()
-    validate_args(parser, args)
 
-    args = parser.parse_args(args)
+    try:
+        args = parser.parse_args(args)
+    except SystemExit as e:
+        if e.code == 2:  # argparse uses exit code 2 for argument errors
+            raise ValueError("Invalid command-line arguments")
+        else:
+            raise
 
     # convert absent arguments (`None`) to 0
     args.mg = args.mg if args.mg is not None else 0

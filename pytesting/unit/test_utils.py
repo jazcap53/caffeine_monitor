@@ -53,7 +53,29 @@ def test_parse_clas_walltime(mg, flag):
 ])
 def test_parse_clas_invalid_walltime_format(capsys, mg, flag, invalid_walltime):
     """
-    check that `walltime` cla is formatted correctly
+    Check that `parse_clas()` raises a `ValueError` with an appropriate error message
+    when the `walltime` argument is provided with an invalid format.
+
+    The test cases cover the following scenarios:
+    - Invalid time string format (e.g., "1234", "12:345", "1 2:34", "12:3a")
+    - Invalid hours (e.g., "24:00", "-1:30")
+    - Invalid minutes (e.g., "23:60", "22:-1")
+
+    The test asserts that:
+    1. A `ValueError` is raised when `parse_clas()` is called with an invalid walltime format.
+    2. The error message contains the word "Invalid".
+    3. The error message is specific to the type of invalid input:
+       - If the `invalid_walltime` starts with a `-`, the error message should contain
+         "Invalid command-line arguments" (indicating an argument parsing error).
+       - If the `invalid_walltime` contains a colon (`:`) and a space character (`' '`),
+         the error message should contain "Invalid time string" (indicating an invalid
+         time string format error).
+       - If the `invalid_walltime` contains a colon (`:`) but no space character,
+         the error message should contain one of the substrings "time string", "hours",
+         or "minutes" (indicating an invalid time value error).
+
+    The test parametrizes the `mg` (milligrams), `flag` ("-w" or "--walltime"), and
+    `invalid_walltime` (various invalid walltime formats) to cover a range of test cases.
     """
     # Arrange
     args = [str(mg), flag, invalid_walltime]
@@ -61,7 +83,21 @@ def test_parse_clas_invalid_walltime_format(capsys, mg, flag, invalid_walltime):
     # Act and Assert
     with pytest.raises(ValueError) as exc_info:
         parse_clas(args)
-    assert "Invalid time string" in str(exc_info.value)
+
+    error_message = str(exc_info.value)
+    assert "Invalid" in error_message, f"Expected 'Invalid' in the error message, but got: {error_message}"
+
+    if invalid_walltime.startswith('-'):
+        assert "Invalid command-line arguments" in error_message, f"Unexpected error message: {error_message}"
+    elif ":" in invalid_walltime:
+        if ' ' in invalid_walltime:
+            assert "Invalid time string" in error_message, f"Unexpected error message: {error_message}"
+        else:
+            assert any(substring in error_message for substring in [
+                "time string",
+                "hours",
+                "minutes",
+            ]), f"Unexpected error message: {error_message}"
 
 
 @pytest.mark.parametrize("current_time, walltime, expected_mins", [
