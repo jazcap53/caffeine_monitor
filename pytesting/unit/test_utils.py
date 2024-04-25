@@ -154,18 +154,21 @@ def test_bad_caff_env_value_exits(mocker):
         (["0", "0", "--bev", "soda"], {"mg": 0, "mins": 0, "bev": "soda"}),
         (["100", "-b", "chocolate"], {"mg": 100, "mins": 0, "bev": "chocolate"}),
         (["-b", "coffee"], {"mg": 0, "mins": 0, "bev": "coffee"}),
-        (["100", "20", "--bev", "invalid"], SystemExit),
+        (["100", "20", "--bev", "invalid"], ValueError),
         (["-h"], SystemExit),
-        (["abc"], SystemExit),  # Invalid type for mg
-        (["100", "abd"], SystemExit),  # Invalid type for mins
+        (["abc"], ValueError),  # Invalid type for mg
+        (["100", "abd"], ValueError),  # Invalid type for mins
         (["100", "-60"], {"mg": 100, "mins": -60}),  # Negative value for mins
-        (["100", "20", "--bev", "whiskey"], SystemExit),  # Invalid beverage type
-        (["100", "-b"], SystemExit),  # Missing beverage type after -b
+        (["100", "20", "--bev", "whiskey"], ValueError),  # Invalid beverage type
+        (["100", "-b"], ValueError),  # Missing beverage type after -b
     ],
 )
 def test_parse_clas(args, expected):
     if expected == SystemExit:
         with pytest.raises(SystemExit):
+            parse_clas(args)
+    elif expected == ValueError:
+        with pytest.raises(ValueError, match="Invalid command-line arguments"):
             parse_clas(args)
     else:
         parsed_args = parse_clas(args)
