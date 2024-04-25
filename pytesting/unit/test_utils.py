@@ -25,7 +25,7 @@ import logging
 @pytest.mark.parametrize("flag", ["-w", "--walltime"])
 def test_parse_clas_walltime(mg, flag):
     """
-    check that `walltime` cla is recognized
+    Check that providing walltime sets the `mins` attribute correctly
     """
     # Arrange
     walltime = datetime.now().strftime("%H:%M")
@@ -35,14 +35,22 @@ def test_parse_clas_walltime(mg, flag):
     parsed_args = parse_clas(args)
 
     # Assert
-    assert parsed_args.walltime == walltime
+    assert parsed_args.mins is not None  # check that mins was set
     assert parsed_args.mg == mg
-    assert not parsed_args.mins  # check that mins is None or 0
 
 
-@pytest.mark.parametrize("mg", [50, 100, 200, 300])
+@pytest.mark.parametrize("mg", [0, 100, 300])
 @pytest.mark.parametrize("flag", ["-w", "--walltime"])
-@pytest.mark.parametrize("invalid_walltime", ["1234", "12:345", "1 2:34", "12:3a"])
+@pytest.mark.parametrize("invalid_walltime", [
+    "1234",    # Invalid format
+    "12:345",  # Invalid format
+    "1 2:34",  # Invalid format
+    "12:3a",   # Invalid format
+    "24:00",   # Invalid hours
+    "23:60",   # Invalid minutes
+    "-1:30",   # Invalid hours
+    "22:-1",   # Invalid minutes
+])
 def test_parse_clas_invalid_walltime_format(capsys, mg, flag, invalid_walltime):
     """
     check that `walltime` cla is formatted correctly
@@ -51,10 +59,9 @@ def test_parse_clas_invalid_walltime_format(capsys, mg, flag, invalid_walltime):
     args = [str(mg), flag, invalid_walltime]
 
     # Act and Assert
-    with pytest.raises(SystemExit) as exc_info:
+    with pytest.raises(ValueError) as exc_info:
         parse_clas(args)
-    assert exc_info.value.code == 1
-    assert "Invalid walltime format. Expected HH:MM" in capsys.readouterr().out
+    assert "Invalid time string" in str(exc_info.value)
 
 
 @pytest.mark.parametrize("current_time, walltime, expected_mins", [
@@ -86,9 +93,6 @@ def test_convert_walltime_to_mins(current_time, walltime, expected_mins):
 def test_parse_clas_walltime_to_mins(mg, walltime, current_time, expected_mins, mocker):
     # Arrange
     args = [str(mg), "-w", walltime]
-
-    # Create a custom datetime object with the desired time component
-    # current_datetime = datetime.combine(datetime.today(), datetime.strptime(current_time, "%H:%M").time())
 
     # Act
     with freeze_time(current_time):

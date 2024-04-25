@@ -10,6 +10,7 @@ from pytest_mock import MockerFixture
 import sys
 
 from caffeine_monitor.src.caffeine_monitor import CaffeineMonitor
+from caffeine_monitor.src.utils import parse_clas
 
 
 def test_can_make_caffeine_monitor_instance_mocked(files_mocked):

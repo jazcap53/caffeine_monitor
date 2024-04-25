@@ -1,6 +1,7 @@
 # file: src/utils.py
 # created: 2020-04-05
 import os
+import re
 import sys
 import argparse
 import configparser
@@ -65,6 +66,31 @@ def parse_walltime(args):
             sys.exit(1)
 
 
+def get_ttl_mins_from_datetime(dt):
+    # my_dt = datetime.strptime(dt, "%H:%M")
+    my_dt_time = dt.time()
+    my_dt_hours = my_dt_time.hour
+    my_dt_mins = my_dt_time.minute
+    return 60 * my_dt_hours + my_dt_mins
+
+
+def get_ttl_mins_from_time_str(ts):
+    match = re.match(r'(\d{2}):(\d{2})', ts)
+    if match:
+        ts_groups = match.groups()
+        hours = int(ts_groups[0])
+        minutes = int(ts_groups[1])
+
+        if not (0 <= hours <= 23):
+            raise ValueError(f"Invalid hours: {hours}. Hours should be between 0 and 23 (inclusive).")
+        if not (0 <= minutes <= 59):
+            raise ValueError(f"Invalid minutes: {minutes}. Minutes should be between 0 and 59 (inclusive).")
+
+        return 60 * hours + minutes
+    else:
+        raise ValueError(f"Invalid time string: {ts}")
+
+
 def convert_walltime_to_mins(walltime, current_datetime):
     # Parse walltime into a datetime object
     walltime_datetime = datetime.strptime(walltime, "%H:%M")
@@ -98,11 +124,15 @@ def parse_clas(args=None):
     # convert absent arguments (`None`) to 0
     args.mg = args.mg if args.mg is not None else 0
 
-    parse_walltime(args)
+    # parse_walltime(args)
 
     if args.walltime:
         current_datetime = datetime.now()
-        args.mins = int(convert_walltime_to_mins(args.walltime, current_datetime))
+        current_ttl_mins = get_ttl_mins_from_datetime(current_datetime)
+        walltime_ttl_mins = get_ttl_mins_from_time_str(args.walltime)
+
+        args.mins = current_ttl_mins - walltime_ttl_mins
+        del args.walltime
     else:
         args.mins = args.mins if args.mins is not None else 0
 
