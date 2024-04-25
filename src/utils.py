@@ -129,14 +129,16 @@ def parse_clas(args=None):
     # convert absent arguments (`None`) to 0
     args.mg = args.mg if args.mg is not None else 0
 
-    # parse_walltime(args)
-
     if args.walltime:
         current_datetime = datetime.now()
         current_ttl_mins = get_ttl_mins_from_datetime(current_datetime)
         walltime_ttl_mins = get_ttl_mins_from_time_str(args.walltime)
 
-        args.mins = current_ttl_mins - walltime_ttl_mins
+        mins_diff = current_ttl_mins - walltime_ttl_mins
+        if mins_diff < -120:  # If walltime is more than 2 hours ahead of current time
+            mins_diff += 1440  # Add total minutes in a day to treat walltime as previous day
+
+        args.mins = mins_diff
         del args.walltime
     else:
         args.mins = args.mins if args.mins is not None else 0
