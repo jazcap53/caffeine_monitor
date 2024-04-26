@@ -477,7 +477,7 @@ def test_process_future_list(mocker, files_mocked, future_list, expected_new_fut
     assert mock_process_item.call_count == initial_future_list_length
 
 
-@pytest.mark.skip(reason="Not ready for this test yet")
+# @pytest.mark.skip(reason="Not ready for this test yet")
 @pytest.mark.parametrize("mg, walltime, initial_level, expected_level", [
     (100, "09:00", 50.0, 125.0),
     (50, "10:30", 75.0, 100.0),
@@ -494,10 +494,11 @@ def test_process_item_with_walltime(mocker, files_mocked, mg, walltime, initial_
     cm_obj.data_dict = {"level": initial_level, "time": current_datetime.strftime('%Y-%m-%d %H:%M:%S')}
 
     # Set up the current_item for testing
+    walltime_datetime = datetime.combine(current_datetime.date(), datetime.strptime(walltime, "%H:%M").time())
     cm_obj.current_item = {
         "level": mg,
-        "when_to_process": datetime.strptime(walltime, "%H:%M"),
-        "time_entered": datetime.strptime(walltime, "%H:%M"),
+        "when_to_process": walltime_datetime,
+        "time_entered": walltime_datetime,
     }
 
     # Act
